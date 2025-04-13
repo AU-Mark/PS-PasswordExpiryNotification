@@ -1,5 +1,7 @@
 # PS-PasswordExpiryNotification
-![PS-PasswordExpiryNotification](https://raw.githubusercontent.com/AU-Mark/PS-PasswordExpiryNotification/refs/heads/main/Source%20Files/PS-PasswordExpiryNotification.png)
+<p align="center">
+    <img src="https://raw.githubusercontent.com/AU-Mark/PS-PasswordExpiryNotification/refs/heads/main/Source%20Files/PS-PasswordExpiryNotification.png" />
+</p>
 
 ## Description
 This script installs powershell files and configures a scheduled task that runs daily at 8am and processes all Active Directory users that are enabled without password never expires checked in their account options. Any account that has a password that is going to expire within the configurable number of days (Default is 14) will be sent an email to their email address in the email address field of their Active Directory account. This email is dynamically crafted based on options configured during installation or it can be recreated if it's missing by running the either the installation script or main script in an interactive powershell session after installation.
