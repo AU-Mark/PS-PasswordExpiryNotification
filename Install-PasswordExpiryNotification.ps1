@@ -496,10 +496,15 @@ function Prompt-Input {
         [switch]$ValidateServer,
         [switch]$ValidateURI,
         [switch]$ValidateEmail,
-        [switch]$ValidateMX
+        [switch]$ValidateMX,
+        [switch]$Password
     )
 
-    Write-Color -Text "$PromptMessage" -Color White -NoNewline; $prompt = Read-Host "$zeroWidthSpace"
+    If ($Password) {
+        Write-Color -Text "$PromptMessage" -Color White -NoNewline; $prompt = Read-Host "$zeroWidthSpace" -AsSecureString
+    } Else {
+        Write-Color -Text "$PromptMessage" -Color White -NoNewline; $prompt = Read-Host "$zeroWidthSpace"
+    }
 
     if ([string]::IsNullOrWhiteSpace($prompt)) {
         If ($Required) {
@@ -510,70 +515,84 @@ function Prompt-Input {
         }
     }
 
-    Write-Color "You entered:"," $prompt" -Color White,Green -LinesAfter 1 -LinesBefore 1
+    If ($Password) {
+        Write-Color -Text "Enter the password a second time to confirm" -Color White -NoNewline; $prompt2 = Read-Host "$zeroWidthSpace" -AsSecureString
 
-    Write-Color -Text "Is this correct"," (","Y","/N)" -Color White,Yellow,Green,Yellow -NoNewline; $verifyprompt = Read-Host "$zeroWidthSpace"
-    Write-Color ' '
-    switch ($verifyprompt.ToLower()) {
-        "y" { 
-            If ($ValidateServer) {
-                If (Validate-Server -Server $prompt) {
-                    return $prompt 
+        # Convert secure strings to plain text
+        $plainText1 = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($prompt))
+        $plainText2 = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($prompt2))
+
+        If ($plainText1 -eq $plainText2) {
+            Return $plainText1
+        } Else {
+            Write-Color "The passwords entered did not match! Please try again..." -Color Yellow -LinesBefore 1 -LinesAfter 1
+        }
+    } Else {
+        Write-Color "You entered:"," $prompt" -Color White,Green -LinesAfter 1 -LinesBefore 1
+
+        Write-Color -Text "Is this correct"," (","Y","/N)" -Color White,Yellow,Green,Yellow -NoNewline; $verifyprompt = Read-Host "$zeroWidthSpace"
+        Write-Color ' '
+        switch ($verifyprompt.ToLower()) {
+            "y" { 
+                If ($ValidateServer) {
+                    If (Validate-Server -Server $prompt) {
+                        return $prompt 
+                    } Else {
+                        Prompt-Input -PromptMessage $PromptMessage
+                    }
+                } ElseIf ($ValidateURI) {
+                    If (Validate-URI -URI $prompt) {
+                        return $prompt 
+                    } Else {
+                        Prompt-Input -PromptMessage $PromptMessage
+                    }
+                } ElseIf ($ValidateEmail) {
+                    If (Validate-Email -emailAddress $prompt) {
+                        return $prompt 
+                    } Else {
+                        Prompt-Input -PromptMessage $PromptMessage
+                    }
+                } ElseIf ($ValidateMX) {
+                    If (Validate-MXRecord -SenderDomain $prompt) {
+                        return $prompt 
+                    } Else {
+                        Prompt-Input -PromptMessage $PromptMessage
+                    }
                 } Else {
-                    Prompt-Input -PromptMessage $PromptMessage
-                }
-            } ElseIf ($ValidateURI) {
-                If (Validate-URI -URI $prompt) {
                     return $prompt 
-                } Else {
-                    Prompt-Input -PromptMessage $PromptMessage
                 }
-            } ElseIf ($ValidateEmail) {
-                If (Validate-Email -emailAddress $prompt) {
-                    return $prompt 
-                } Else {
-                    Prompt-Input -PromptMessage $PromptMessage
-                }
-            } ElseIf ($ValidateMX) {
-                If (Validate-MXRecord -SenderDomain $prompt) {
-                    return $prompt 
-                } Else {
-                    Prompt-Input -PromptMessage $PromptMessage
-                }
-            } Else {
-                return $prompt 
             }
-        }
-        "n" { 
-            Prompt-Input -PromptMessage $PromptMessage 
-        }
-        default {
-            If ($ValidateServer) {
-                If (Validate-Server -Server $prompt) {
-                    return $prompt 
+            "n" { 
+                Prompt-Input -PromptMessage $PromptMessage 
+            }
+            default {
+                If ($ValidateServer) {
+                    If (Validate-Server -Server $prompt) {
+                        return $prompt 
+                    } Else {
+                        Prompt-Input -PromptMessage $PromptMessage
+                    }
+                } ElseIf ($ValidateURI) {
+                    If (Validate-URI -URI $prompt) {
+                        return $prompt 
+                    } Else {
+                        Prompt-Input -PromptMessage $PromptMessage
+                    }
+                } ElseIf ($ValidateEmail) {
+                    If (Validate-Email -emailAddress $prompt) {
+                        return $prompt 
+                    } Else {
+                        Prompt-Input -PromptMessage $PromptMessage
+                    }
+                } ElseIf ($ValidateMX) {
+                    If (Validate-MXRecord -SenderDomain $prompt) {
+                        return $prompt 
+                    } Else {
+                        Prompt-Input -PromptMessage $PromptMessage
+                    }
                 } Else {
-                    Prompt-Input -PromptMessage $PromptMessage
-                }
-            } ElseIf ($ValidateURI) {
-                If (Validate-URI -URI $prompt) {
                     return $prompt 
-                } Else {
-                    Prompt-Input -PromptMessage $PromptMessage
                 }
-            } ElseIf ($ValidateEmail) {
-                If (Validate-Email -emailAddress $prompt) {
-                    return $prompt 
-                } Else {
-                    Prompt-Input -PromptMessage $PromptMessage
-                }
-            } ElseIf ($ValidateMX) {
-                If (Validate-MXRecord -SenderDomain $prompt) {
-                    return $prompt 
-                } Else {
-                    Prompt-Input -PromptMessage $PromptMessage
-                }
-            } Else {
-                return $prompt 
             }
         }
     }
@@ -642,7 +661,7 @@ function Get-SMTPService {
 
     Switch ($SMTPMethod) {
         "SMTPAUTH" {
-            $question = "What email provider will $ClientName use to send the email notifications?"
+            $question = "What email provider will be used to send the email notifications?"
             $answers = [ordered]@{
                 "Office 365" = "Office 365"
                 "Gmail" = "Gmail"
@@ -719,7 +738,7 @@ function Get-SMTPService {
 
 Function Create-NewCredential {
     $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail
-    $SenderPassword = Prompt-Input -PromptMessage "Enter the password for the email account (This will be stored securely in Credential Manager with a dedicated service account this script will create and use to run the scheduled task)"
+    $SenderPassword = Prompt-Input -PromptMessage "Enter the password for the email account"
 
     # Store the credential in Credential Manager
     New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -Password $SenderPassword -Persist LocalMachine | Out-Null
@@ -748,7 +767,7 @@ Function Add-ClientConfig {
     }
 
     # Define the questions and answers for the SMTP Send Method
-    $question = "What SMTP send method will be used for $ClientName?"
+    $question = "What SMTP send method will be used?"
     $answers = [ordered]@{
         "SMTP AUTH: Office 365, Gmail, Zoho, Outlook, iCloud, Other" = "SMTPAUTH"
         "SMTP Relay: Manual Setup" = "SMTPRELAY"
@@ -1390,10 +1409,15 @@ function Prompt-Input {
         [switch]$ValidateServer,
         [switch]$ValidateURI,
         [switch]$ValidateEmail,
-        [switch]$ValidateMX
+        [switch]$ValidateMX,
+        [switch]$Password
     )
 
-    Write-Color -Text "$PromptMessage" -Color White -NoNewline; $prompt = Read-Host "$zeroWidthSpace"
+    If ($Password) {
+        Write-Color -Text "$PromptMessage" -Color White -NoNewline; $prompt = Read-Host "$zeroWidthSpace" -AsSecureString
+    } Else {
+        Write-Color -Text "$PromptMessage" -Color White -NoNewline; $prompt = Read-Host "$zeroWidthSpace"
+    }
 
     if ([string]::IsNullOrWhiteSpace($prompt)) {
         If ($Required) {
@@ -1404,70 +1428,84 @@ function Prompt-Input {
         }
     }
 
-    Write-Color "You entered:"," $prompt" -Color White,Green -LinesAfter 1 -LinesBefore 1
+    If ($Password) {
+        Write-Color -Text "Enter the password a second time to confirm" -Color White -NoNewline; $prompt2 = Read-Host "$zeroWidthSpace" -AsSecureString
 
-    Write-Color -Text "Is this correct"," (","Y","/N)" -Color White,Yellow,Green,Yellow -NoNewline; $verifyprompt = Read-Host "$zeroWidthSpace"
-    Write-Color ' '
-    switch ($verifyprompt.ToLower()) {
-        "y" { 
-            If ($ValidateServer) {
-                If (Validate-Server -Server $prompt) {
-                    return $prompt 
+        # Convert secure strings to plain text
+        $plainText1 = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($prompt))
+        $plainText2 = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($prompt2))
+
+        If ($plainText1 -eq $plainText2) {
+            Return $plainText1
+        } Else {
+            Write-Color "The passwords entered did not match! Please try again..." -Color Yellow -LinesBefore 1 -LinesAfter 1
+        }
+    } Else {
+        Write-Color "You entered:"," $prompt" -Color White,Green -LinesAfter 1 -LinesBefore 1
+
+        Write-Color -Text "Is this correct"," (","Y","/N)" -Color White,Yellow,Green,Yellow -NoNewline; $verifyprompt = Read-Host "$zeroWidthSpace"
+        Write-Color ' '
+        switch ($verifyprompt.ToLower()) {
+            "y" { 
+                If ($ValidateServer) {
+                    If (Validate-Server -Server $prompt) {
+                        return $prompt 
+                    } Else {
+                        Prompt-Input -PromptMessage $PromptMessage
+                    }
+                } ElseIf ($ValidateURI) {
+                    If (Validate-URI -URI $prompt) {
+                        return $prompt 
+                    } Else {
+                        Prompt-Input -PromptMessage $PromptMessage
+                    }
+                } ElseIf ($ValidateEmail) {
+                    If (Validate-Email -emailAddress $prompt) {
+                        return $prompt 
+                    } Else {
+                        Prompt-Input -PromptMessage $PromptMessage
+                    }
+                } ElseIf ($ValidateMX) {
+                    If (Validate-MXRecord -SenderDomain $prompt) {
+                        return $prompt 
+                    } Else {
+                        Prompt-Input -PromptMessage $PromptMessage
+                    }
                 } Else {
-                    Prompt-Input -PromptMessage $PromptMessage
-                }
-            } ElseIf ($ValidateURI) {
-                If (Validate-URI -URI $prompt) {
                     return $prompt 
-                } Else {
-                    Prompt-Input -PromptMessage $PromptMessage
                 }
-            } ElseIf ($ValidateEmail) {
-                If (Validate-Email -emailAddress $prompt) {
-                    return $prompt 
-                } Else {
-                    Prompt-Input -PromptMessage $PromptMessage
-                }
-            } ElseIf ($ValidateMX) {
-                If (Validate-MXRecord -SenderDomain $prompt) {
-                    return $prompt 
-                } Else {
-                    Prompt-Input -PromptMessage $PromptMessage
-                }
-            } Else {
-                return $prompt 
             }
-        }
-        "n" { 
-            Prompt-Input -PromptMessage $PromptMessage 
-        }
-        default {
-            If ($ValidateServer) {
-                If (Validate-Server -Server $prompt) {
-                    return $prompt 
+            "n" { 
+                Prompt-Input -PromptMessage $PromptMessage 
+            }
+            default {
+                If ($ValidateServer) {
+                    If (Validate-Server -Server $prompt) {
+                        return $prompt 
+                    } Else {
+                        Prompt-Input -PromptMessage $PromptMessage
+                    }
+                } ElseIf ($ValidateURI) {
+                    If (Validate-URI -URI $prompt) {
+                        return $prompt 
+                    } Else {
+                        Prompt-Input -PromptMessage $PromptMessage
+                    }
+                } ElseIf ($ValidateEmail) {
+                    If (Validate-Email -emailAddress $prompt) {
+                        return $prompt 
+                    } Else {
+                        Prompt-Input -PromptMessage $PromptMessage
+                    }
+                } ElseIf ($ValidateMX) {
+                    If (Validate-MXRecord -SenderDomain $prompt) {
+                        return $prompt 
+                    } Else {
+                        Prompt-Input -PromptMessage $PromptMessage
+                    }
                 } Else {
-                    Prompt-Input -PromptMessage $PromptMessage
-                }
-            } ElseIf ($ValidateURI) {
-                If (Validate-URI -URI $prompt) {
                     return $prompt 
-                } Else {
-                    Prompt-Input -PromptMessage $PromptMessage
                 }
-            } ElseIf ($ValidateEmail) {
-                If (Validate-Email -emailAddress $prompt) {
-                    return $prompt 
-                } Else {
-                    Prompt-Input -PromptMessage $PromptMessage
-                }
-            } ElseIf ($ValidateMX) {
-                If (Validate-MXRecord -SenderDomain $prompt) {
-                    return $prompt 
-                } Else {
-                    Prompt-Input -PromptMessage $PromptMessage
-                }
-            } Else {
-                return $prompt 
             }
         }
     }
@@ -1536,7 +1574,7 @@ function Get-SMTPService {
 
     Switch ($SMTPMethod) {
         "SMTPAUTH" {
-            $question = "What email provider will $ClientName use to send the email notifications?"
+            $question = "What email provider will be used to send the email notifications?"
             $answers = [ordered]@{
                 "Office 365" = "Office 365"
                 "Gmail" = "Gmail"
@@ -1613,7 +1651,7 @@ function Get-SMTPService {
 
 Function Create-NewCredential {
     $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail
-    $SenderPassword = Prompt-Input -PromptMessage "Enter the password for the email account (This will be stored securely in Credential Manager with a dedicated service account this script will create and use to run the scheduled task)"
+    $SenderPassword = Prompt-Input -PromptMessage "Enter the password for the email account"
 
     # Store the credential in Credential Manager
     New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -Password $SenderPassword -Persist LocalMachine | Out-Null
@@ -1642,7 +1680,7 @@ Function Add-ClientConfig {
     }
 
     # Define the questions and answers for the SMTP Send Method
-    $question = "What SMTP send method will be used for $ClientName?"
+    $question = "What SMTP send method will be used?"
     $answers = [ordered]@{
         "SMTP AUTH: Office 365, Gmail, Zoho, Outlook, iCloud, Other" = "SMTPAUTH"
         "SMTP Relay: Manual Setup" = "SMTPRELAY"
@@ -1923,7 +1961,7 @@ Function Check-ProgramInstalled {
     return ($installedX86 -ne $null -or $installedX64 -ne $null)
 }
 
-# Function to check if the current user has "Log on as a batch job" rights# Function to check if the current user has "Allow log on as a batch job" rights
+# Function to check if the current user has "Log on as a batch job" rights
 function Check-LogonAsBatchJobRights {
     # Export the local security policy
     secedit /export /cfg "$env:TEMP\secpol.cfg" | Out-Null
@@ -2248,13 +2286,6 @@ function Check-LogonAsBatchJobRights {
 }
 
 Function Install-SchedTask {
-    # Check if the current user has "Allow log on as a batch job" rights
-    if (Check-LogonAsBatchJobRights) {
-        Write-Output "$currentUser has 'Allow log on as a batch job' rights."
-    } else {
-        Write-Output "$currentUser does not have 'Allow log on as a batch job' rights."
-    }
-
     $TaskName = "Password Expiry Email Notification"
 
     # Check if the scheduled task exists
