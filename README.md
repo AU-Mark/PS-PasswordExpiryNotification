@@ -7,12 +7,16 @@
 This script installs powershell files and configures a scheduled task that runs daily at 8am and processes all Active Directory users that are enabled without password never expires checked in their account options. Any account that has a password that is going to expire within the configurable number of days (Default is 14) will be sent an email to their email address in the email address field of their Active Directory account. This email is dynamically crafted based on options configured during installation that are saved in a JSON config file. The JSON config file can be recreated if it's missing by deleting the config file and either running the installation script OR the main script in an interactive powershell session after installation.
 
 ## Dependencies/Prerequisites
-The following modules are required and will be installed during installation to ensure the scripts run without error:
+### Dependencies
+The following PowerShell modules are required and will be installed during installation to ensure the scripts run without error:
 *   ActiveDirectory
 *   CredentialManager
 *   [Send-MailKitMessage](https://www.powershellgallery.com/packages/send-mailkitmessage)
 
 Send-MailKitMessage is a requirement because [Send-MailMessage has been deprecated](https://github.com/dotnet/platform-compat/blob/master/docs/DE0005.md) by Microsoft and should no longer be used.
+
+### Prerequisies
+This script requires that the account running the script be configured with 'Allow logon as batch job' security permission. If you receive this error when you run the script you will need to modify the local security policy to allow the user account to run the scheduled task. If this setting is configured in a GPO it will need to be modified in that GPO.
 
 ## Installation
 ### Run directly from github
