@@ -15,7 +15,7 @@
   Email:          mark.newton@aunalytics.com
   Creation Date:  04/09/2025
 .EXAMPLE
-  PowerShell.exe -ExecutionPolicy Bypass -File PasswordExpiryInstall.ps1
+  PowerShell.exe -ExecutionPolicy Bypass -File Install-PasswordExpiryNotification.ps1
 #>
 
 ################################################################################################################################
@@ -502,7 +502,7 @@ function Prompt-Input {
         }
     }
 
-    Write-Color "You entered:"," $prompt" -Color White,Green
+    Write-Color "You entered:"," $prompt" -Color White,Green -LinesAfter 1 -LinesBefore 1
 
     Write-Color -Text "Is this correct"," (","Y","/N)" -Color White,Yellow,Green,Yellow -NoNewline; $verifyprompt = Read-Host "$zeroWidthSpace"
     Write-Color ' '
@@ -603,16 +603,27 @@ function Prompt-Integer {
 
 function Prompt-Bool {
     param (
-        [string]$PromptMessage
+        [string]$PromptMessage,
+        [switch]$DefaultYes
     )
 
-    Write-Color -Text "$PromptMessage"," (Y/","N",")" -Color White,Yellow,Green,Yellow -NoNewline; $prompt = Read-Host "$zeroWidthSpace"
-    switch ($prompt.ToLower()) {
-        "y" { return $true }
-        "n" { return $false }
-        default { return $false }
+    If ($DefaultYes) {
+        Write-Color -Text "$PromptMessage"," (","Y","/N)" -Color White,Yellow,Green,Yellow -NoNewline; $prompt = Read-Host "$zeroWidthSpace"
+        switch ($prompt.ToLower()) {
+            "y" { return $true }
+            "n" { return $false }
+            default { return $true }
+        }
+        Write-Color " "
+    } Else {
+        Write-Color -Text "$PromptMessage"," (Y/","N",")" -Color White,Yellow,Green,Yellow -NoNewline; $prompt = Read-Host "$zeroWidthSpace"
+        switch ($prompt.ToLower()) {
+            "y" { return $true }
+            "n" { return $false }
+            default { return $false }
+        }
+        Write-Color " "
     }
-    Write-Color " "
 }
 
 function Get-SMTPService {
@@ -683,7 +694,7 @@ function Get-SMTPService {
             switch ($SMTPService) {
                 "Office 365" {
                     Write-Color "The emails will be sent with the Direct Send method of O365 which requires the client to have static IPs and they have to be added to their DNS SPF record otherwise they will be flagged as SPAM" -Color Yellow -LinesBefore 1 -LinesAfter 1 -L 
-                    $SenderDomain = Prompt-Input -PromptMessage "Enter the client's email domain that will send the email (e.g. aunalytics.com)" -ValidateServer
+                    $SenderDomain = Prompt-Input -PromptMessage "Enter the client's email domain that will send the email (e.g. aunalytics.com)" -ValidateMX
                     $SMTPServer = (Resolve-DnsName -Name $SenderDomain -Type MX -Server 8.8.8.8).NameExchange
                     $SMTPPort = 25
                 }
@@ -703,7 +714,7 @@ Function Create-NewCredential {
     $SenderPassword = Prompt-Input -PromptMessage "Enter the password for the email account (This will be stored securely in Credential Manager with a dedicated service account this script will create and use to run the scheduled task)"
 
     # Store the credential in Credential Manager
-    New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -Password $SenderPassword -Persist LocalMachine
+    New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -Password $SenderPassword -Persist LocalMachine | Out-Null
 
     Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
 
@@ -782,7 +793,6 @@ Function Add-ClientConfig {
         ClientSSPRLockScreen = $ClientSSPRLockScreen
         ExpireDays = $ExpireDays
         SMTPMethod = $SMTPMethod
-        DedicatedEmail = $DedicatedEmail
         SMTPServer = $SMTPServer
         SMTPPort = $SMTPPort
         SMTPTLS = $SMTPTLS
@@ -826,7 +836,7 @@ Function Get-ClientConfig {
 
                 If ($Null -eq $Credential) {
                     Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with a dedicated email account." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
-                    $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new dedciated email account credential now?"
+                    $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a SMTP AUTH email account credential now?"
                     If ($NewCredential) {
                         Create-NewCredential
                     } Else {
@@ -1331,7 +1341,7 @@ function Prompt-Question {
     )
 
     # Output the question
-    Write-Color -Text "$question" -Color White
+    Write-Color -Text "$question" -Color White -LinesBefore 1
 
     # Output each possible answer with a number
     $i = 1
@@ -1363,7 +1373,8 @@ function Prompt-Input {
         [switch]$Required,
         [switch]$ValidateServer,
         [switch]$ValidateURI,
-        [switch]$ValidateEmail
+        [switch]$ValidateEmail,
+        [switch]$ValidateMX
     )
 
     Write-Color -Text "$PromptMessage" -Color White -NoNewline; $prompt = Read-Host "$zeroWidthSpace"
@@ -1380,6 +1391,7 @@ function Prompt-Input {
     Write-Color "You entered:"," $prompt" -Color White,Green -LinesAfter 1 -LinesBefore 1
 
     Write-Color -Text "Is this correct"," (","Y","/N)" -Color White,Yellow,Green,Yellow -NoNewline; $verifyprompt = Read-Host "$zeroWidthSpace"
+    Write-Color ' '
     switch ($verifyprompt.ToLower()) {
         "y" { 
             If ($ValidateServer) {
@@ -1477,16 +1489,27 @@ function Prompt-Integer {
 
 function Prompt-Bool {
     param (
-        [string]$PromptMessage
+        [string]$PromptMessage,
+        [switch]$DefaultYes
     )
 
-    Write-Color -Text "$PromptMessage"," (Y/","N",")" -Color White,Yellow,Green,Yellow -NoNewline; $prompt = Read-Host "$zeroWidthSpace"
-    switch ($prompt.ToLower()) {
-        "y" { return $true }
-        "n" { return $false }
-        default { return $false }
+    If ($DefaultYes) {
+        Write-Color -Text "$PromptMessage"," (","Y","/N)" -Color White,Yellow,Green,Yellow -NoNewline; $prompt = Read-Host "$zeroWidthSpace"
+        switch ($prompt.ToLower()) {
+            "y" { return $true }
+            "n" { return $false }
+            default { return $true }
+        }
+        Write-Color " "
+    } Else {
+        Write-Color -Text "$PromptMessage"," (Y/","N",")" -Color White,Yellow,Green,Yellow -NoNewline; $prompt = Read-Host "$zeroWidthSpace"
+        switch ($prompt.ToLower()) {
+            "y" { return $true }
+            "n" { return $false }
+            default { return $false }
+        }
+        Write-Color " "
     }
-    Write-Color " "
 }
 
 function Get-SMTPService {
@@ -1577,7 +1600,7 @@ Function Create-NewCredential {
     $SenderPassword = Prompt-Input -PromptMessage "Enter the password for the email account (This will be stored securely in Credential Manager with a dedicated service account this script will create and use to run the scheduled task)"
 
     # Store the credential in Credential Manager
-    New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -Password $SenderPassword -Persist LocalMachine
+    New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -Password $SenderPassword -Persist LocalMachine | Out-Null
 
     Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
 
@@ -1587,8 +1610,8 @@ Function Create-NewCredential {
 Function Add-ClientConfig {
     # Prompt the user for client input
     $ClientName = Prompt-Input -PromptMessage "Enter the client's company name (This will be displayed in the email body)" -Required
-    $ClientURL = Prompt-Input -PromptMessage "Enter the client's website URL"
-    $ClientLogo = Prompt-Input -PromptMessage "Enter a URL or the file path to a logo image for the client (This logo will be featured at the top of the email body)" -Validate URI
+    $ClientURL = Prompt-Input -PromptMessage "Enter the client's website URL" 
+    $ClientLogo = Prompt-Input -PromptMessage "Enter a URL or the file path to a logo image for the client (This logo will be featured at the top of the email body)" -ValidateURI
     $ClientVPN = Prompt-Bool -PromptMessage "Does this client have a VPN for end users?"
     $ClientAzure = Prompt-Bool -PromptMessage "Does this client have Azure P1 or P2 licenses and have Password Writeback enabled in AAD/Entra Connect?"
     $ClientSSPR = Prompt-Bool -PromptMessage "Does this client have Microsoft SSPR (Self Sevrice Password Reset) enabled?"
@@ -1656,7 +1679,6 @@ Function Add-ClientConfig {
         ClientSSPRLockScreen = $ClientSSPRLockScreen
         ExpireDays = $ExpireDays
         SMTPMethod = $SMTPMethod
-        DedicatedEmail = $DedicatedEmail
         SMTPServer = $SMTPServer
         SMTPPort = $SMTPPort
         SMTPTLS = $SMTPTLS
@@ -1668,7 +1690,7 @@ Function Add-ClientConfig {
     $json = $clientConfig | ConvertTo-Json -Depth 3
 
     # Save the JSON to a file
-    $json | Out-File -FilePath "$PSScriptRoot\clientconf.json" -Encoding utf8 -Force
+    $json | Out-File -FilePath "$ScriptPath\clientconf.json" -Encoding utf8 -Force
 
     # Return the hashtable content
     Return $clientConfig
@@ -2162,7 +2184,7 @@ Function Install-SchedTask {
     $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -File `"$ScriptPath\PasswordExpiryNotification.ps1`""
     $trigger = New-ScheduledTaskTrigger -Daily -At "8:00AM"
     $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType S4U -RunLevel Highest
-    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+    $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable
     
     Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description "Runs the password expiration notification script at the scheduled time to send password expiration emails to end users" | Out-Null
 }
@@ -2218,7 +2240,7 @@ Try {
         }
 
         Write-Color ' '
-        $FoundConfig = Prompt-Bool -PromptMessage "Would you like to use the found configuration?"
+        $FoundConfig = Prompt-Bool -PromptMessage "Would you like to use the found configuration?" -DefaultYes
         Write-Color ' '
 
         If (-not ($FoundConfig)) {
