@@ -1984,8 +1984,16 @@ Try {
                 $tempFilePath = "$tempFilePath.html"
                 # Dump the EmailBody into the html temp file
                 Set-Content -Path $tempFilePath -Value $EmailBody
-                # Open the HTML file with Edge browser for viewing
-                Start-Process "msedge.exe" -ArgumentList $tempFilePath
+
+                # Open the HTML file with Chrome or Edge browser for viewing
+                $edgeInstalled = Check-ProgramInstalled -ProgramName "Microsoft Edge"
+                $chromeInstalled = Check-ProgramInstalled -ProgramName "Google Chrome"
+                if ($edgeInstalled) {
+                    Start-Process "msedge.exe" -ArgumentList $tempFilePath
+                } elseif ($chromeInstalled) {
+                    Start-Process "chrome.exe" -ArgumentList $tempFilePath
+                }
+
                 Exit 0
             } 
 
