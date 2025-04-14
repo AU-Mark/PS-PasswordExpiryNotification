@@ -738,7 +738,7 @@ function Get-SMTPService {
 
 Function Create-NewCredential {
     $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail
-    $SenderPassword = Prompt-Input -PromptMessage "Enter the password for the email account"
+    $SenderPassword = Prompt-Input -PromptMessage "Enter the app password for the email account" -Password -Required
 
     # Store the credential in Credential Manager
     New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -Password $SenderPassword -Persist LocalMachine | Out-Null
@@ -1651,7 +1651,7 @@ function Get-SMTPService {
 
 Function Create-NewCredential {
     $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail
-    $SenderPassword = Prompt-Input -PromptMessage "Enter the password for the email account"
+    $SenderPassword = Prompt-Input -PromptMessage "Enter the app password for the email account" -Password -Required
 
     # Store the credential in Credential Manager
     New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -Password $SenderPassword -Persist LocalMachine | Out-Null
