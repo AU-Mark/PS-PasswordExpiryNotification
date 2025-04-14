@@ -423,9 +423,9 @@ function Validate-Email {
 }
 
 function Validate-MXRecord {
-param {
+param (
     [string]$SenderDomain
-}
+)
 
     # Define regex patterns for FQDN, IPv4, and IPv6
     $fqdnPattern = '^(?=.{1,253}$)(?:(?!\d+\.)[a-zA-Z0-9-_]{1,63}\.?)+(?:[a-zA-Z]{2,})$'
@@ -1309,9 +1309,9 @@ function Validate-Email {
 }
 
 function Validate-MXRecord {
-param {
+param (
     [string]$SenderDomain
-}
+)
 
     # Define regex patterns for FQDN, IPv4, and IPv6
     $fqdnPattern = '^(?=.{1,253}$)(?:(?!\d+\.)[a-zA-Z0-9-_]{1,63}\.?)+(?:[a-zA-Z]{2,})$'
