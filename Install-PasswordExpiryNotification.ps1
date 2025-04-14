@@ -2038,10 +2038,10 @@ Try {
 
             If ($DaysToExpire -gt 1) {
                 $ExpiryMsg = "in $daystoexpire days"
-                $EmailSubject="Your $ClientName password will expire in $ExpiryMsg."
+                $EmailSubject="Your $($clientConfig["ClientName"]) password will expire in $ExpiryMsg."
             } Else {
                 $ExpiryMsg = "today"
-                $EmailSubject="Your $ClientName password will expire $ExpiryMsg."
+                $EmailSubject="Your $($clientConfig["ClientName"]) password will expire $ExpiryMsg."
             }
 
             # If a user has no email address listed
@@ -2074,12 +2074,17 @@ Try {
             } 
 
             # Send Email Message
-            If (($DaysToExpire -ge 0) -and ($DaysToExpire -le $ExpireDays)) {
-                Write-Color "Password for $FullName will expire $ExpiryMsg. Notification email sent to user at $UserEmail" -L -NoConsoleOutput
+            If (($DaysToExpire -ge 0) -and ($DaysToExpire -le $clientConfig["ExpireDays"])) {
+                # Dot source the PowerShell HTML file
+                . ("$PSScriptRoot\PasswordExpiryHTML.ps1")
+
+                # Send the email
                 Send-PasswordExpiry -clientConfig $clientConfig -EmailRecipient $UserEmail -EmailSubject $EmailSubject -EmailBody $EmailBody
+
+                Write-Color "Password for $FullName will expire $ExpiryMsg. Notification email sent to user at $UserEmail" -L -NoConsoleOutput
             } Else {
                 # Log Non Expiring Password
-                If ($Debug = $True) {
+                If ($Debug -eq $True) {
                     #Write-Host "No password expiration was found for $Username"
 					Write-Color "No password expiration was found for $Username" -Color White -L -LogLvl 'DEBUG'
 				}
