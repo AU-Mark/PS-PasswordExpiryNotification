@@ -34,6 +34,12 @@ The following SMTP Send Methods are available for configuration:
 *   SMTPNOAUTH (Office 365 Direct Send, Google Restricted SMTP)
 *   SMTPRELAY (Custom options configured during installation)
 
+#### SMTPAUTH
+If you are planning to use one of the SMTPAUTH methods with a dedicated mailbox to send emails, you will need to generate an app password and use that when the script asks you to use a password. OAuth2 support is not provided in this script.
+
+#### SMTPNOAUTH
+If you are planning to use one of the SMTPNOAUTH methods you will need to ensure the client has a static IP address where the server is located and that IP address has been added to the client's SPF DNS record. Otherwise the emails may be flagged as SPAM.
+
 ### JSON Options
 These are the options that will be able to be configured to dynamically craft the HTML body of body and send the email. You can preinstall a JSON file with these options configured in C:\Scripts\AUPasswordExpiry prior to installation or running the main script and it will be detected automatically.
 #### Individual Options
