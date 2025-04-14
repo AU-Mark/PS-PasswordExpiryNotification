@@ -50,13 +50,21 @@ Function Check-ModuleStatus {
         [Parameter(Mandatory=$False)][Boolean]$Silent
     )
 
+    if ((Get-PackageProvider).Name -notcontains 'NuGet') {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+        Import-PackageProvider -Name NuGet -Force
+    } 
+
     If (Get-Module -ListAvailable -Name $Name) {
         Import-Module $Name
+        Write-Color "Imported module $Name" -Color Green -L
         Return $True
     } Else {
         If ($Silent -eq $True) {
             Install-Module -Name $Name -Force 
             Import-Module $Name
+            Write-Color "Installed and imported module $Name" -Color Green -L
             Return $True
         } Else {
             Write-Host "WARNING: $Name module is not installed. It will need to be installed with an admin PowerShell session before continuing"
@@ -936,13 +944,21 @@ Function Check-ModuleStatus {
         [Parameter(Mandatory=$False)][Boolean]$Silent
     )
 
+    if ((Get-PackageProvider).Name -notcontains 'NuGet') {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+        Import-PackageProvider -Name NuGet -Force
+    } 
+
     If (Get-Module -ListAvailable -Name $Name) {
         Import-Module $Name
+        Write-Color "Imported module $Name" -Color Green -L
         Return $True
     } Else {
         If ($Silent -eq $True) {
             Install-Module -Name $Name -Force 
             Import-Module $Name
+            Write-Color "Installed and imported module $Name" -Color Green -L
             Return $True
         } Else {
             Write-Host "WARNING: $Name module is not installed. It will need to be installed with an admin PowerShell session before continuing"
