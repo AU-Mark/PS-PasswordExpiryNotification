@@ -2149,7 +2149,7 @@ $BodyBegin = @"
 "@
 
 $InstructDomain = @"
-                                <p><img src="https://i.ibb.co/gLQnnPgN/icon-key-25.png" alt="Key Icon">&nbsp;If you work at a&nbsp;<strong>$($clientConfig["ClientName"]) Office</strong>:</p>
+                                <p><img src="https://raw.githubusercontent.com/AU-Mark/PS-PasswordExpiryNotification/main/Source%20Files/Icons/Key.png" alt="Key Icon">&nbsp;If you work at a&nbsp;<strong>$($clientConfig["ClientName"]) Office</strong>:</p>
                                 <p class="tab"><strong>1.</strong>&nbsp;Press&nbsp;<strong>Ctrl + Alt + Delete</strong>&nbsp;on the keyboard.</p>
                                 <p class="tab"><strong>2.</strong>&nbsp;Select&nbsp;<strong>Change a password</strong>&nbsp;from the menu.</p>
                                 <p class="tab"><strong>3.</strong>&nbsp;Enter your old password, and your new password twice and press the enter key or the arrow button.</p>
@@ -2157,7 +2157,7 @@ $InstructDomain = @"
 "@ 
 
 $InstructDomainVPN = @"
-                                <p><img src="https://i.ibb.co/gLQnnPgN/icon-key-25.png" alt="Key Icon">&nbsp;If you work at a&nbsp;<strong>$($clientConfig["ClientName"]) Office or are connected to the $($clientConfig["ClientName"]) VPN</strong>:</p>
+                                <p><img src="https://raw.githubusercontent.com/AU-Mark/PS-PasswordExpiryNotification/main/Source%20Files/Icons/Key.png" alt="Key Icon">&nbsp;If you work at a&nbsp;<strong>$($clientConfig["ClientName"]) Office or are connected to the $($clientConfig["ClientName"]) VPN</strong>:</p>
                                 <p class="tab"><strong>1.</strong>&nbsp;Press&nbsp;<strong>Ctrl + Alt + Delete</strong>&nbsp;on the keyboard.</p>
                                 <p class="tab"><strong>2.</strong>&nbsp;Select&nbsp;<strong>Change a password</strong>&nbsp;from the menu.</p>
                                 <p class="tab"><strong>3.</strong>&nbsp;Enter your old password, and your new password twice and press the enter key or the arrow button.</p>
@@ -2165,7 +2165,7 @@ $InstructDomainVPN = @"
 "@ 
 
 $InstructEntra = @"
-                                <p><img src="https://i.ibb.co/gLQnnPgN/icon-key-25.png" alt="Key Icon">&nbsp;Reset your password with&nbsp;<strong>Ctrl + Alt + Delete</strong><p>
+                                <p><img src="https://raw.githubusercontent.com/AU-Mark/PS-PasswordExpiryNotification/main/Source%20Files/Icons/Key.png" alt="Key Icon">&nbsp;Reset your password with&nbsp;<strong>Ctrl + Alt + Delete</strong><p>
                                 <p class="tab"><strong>1.</strong>&nbsp;Press&nbsp;<strong>Ctrl + Alt + Delete</strong>&nbsp;on the keyboard.</p>
                                 <p class="tab"><strong>2.</strong>&nbsp;Select&nbsp;<strong>Change a password</strong>&nbsp;from the menu.</p>
                                 <p class="tab"><strong>3.</strong>&nbsp;Enter your old password, and your new password twice and press the enter key or the arrow button.</p>
@@ -2173,7 +2173,7 @@ $InstructEntra = @"
 "@ 
 
 $Instruct365 = @"
-                                <p><img src="https://i.ibb.co/W4rfgzxr/microsoft-365.png" alt="Microsoft 365 Icon">&nbsp;Reset your password in a web browser with&nbsp;<strong>Microsoft 365</strong>:</p>
+                                <p><img src="https://raw.githubusercontent.com/AU-Mark/PS-PasswordExpiryNotification/main/Source%20Files/Icons/Microsoft365.png" alt="Microsoft 365 Icon">&nbsp;Reset your password in a web browser with&nbsp;<strong>Microsoft 365</strong>:</p>
                                 <p class="tab"><strong>1.</strong>&nbsp;Open a web browser on your workstation.</p>
                                 <p class="tab"><strong>2.</strong>&nbsp;Go to&nbsp<a href="https://www.microsoft365.com" target="_blank">https://www.microsoft365.com</a>&nbspand if needed sign-in with your account.</p>
                                 <p class="tab"><strong>3.</strong>&nbsp;Click on your avatar icon in the upper right corner of the screen.</p>
@@ -2186,7 +2186,7 @@ $Instruct365 = @"
 "@
 
 $InstructSSPR = @"
-								<p><img src="https://i.ibb.co/prJTL5Zz/icon-user-shield-25.png" alt="User Shield Icon">&nbsp;Reset your password in a web browser using&nbsp;<strong>Microsoft Self-Service Password Reset</strong>:</p>
+								<p><img src="https://raw.githubusercontent.com/AU-Mark/PS-PasswordExpiryNotification/main/Source%20Files/Icons/UserShield.png" alt="User Shield Icon">&nbsp;Reset your password in a web browser using&nbsp;<strong>Microsoft Self-Service Password Reset</strong>:</p>
                                 <p class="tab"><strong>1.</strong>&nbsp;Go to&nbsp;<a href="https://passwordreset.microsoftonline.com" target="_blank">https://passwordreset.microsoftonline.com</a></p>
                                 <p class="tab"><strong>2.</strong>&nbsp;Enter your username and follow the prompts to verify your identity.</p>
                                 <p class="tab"><strong>3.</strong>&nbsp;Once verified, enter your new password and confirm it.</p>
@@ -2195,7 +2195,7 @@ $InstructSSPR = @"
 "@ 
 
 $InstructSSPRButton = @"
-                                <p><img src="https://i.ibb.co/FkqSBYGB/icon-desktop-25.png" alt="icon-desktop-25" border="0">&nbsp;Reset your password using the&nbsp;<strong>Password Reset button on the lock screen</strong>:</p>
+                                <p><img src="https://raw.githubusercontent.com/AU-Mark/PS-PasswordExpiryNotification/main/Source%20Files/Icons/Desktop.png" alt="icon-desktop-25" border="0">&nbsp;Reset your password using the&nbsp;<strong>Password Reset button on the lock screen</strong>:</p>
                                 <p class="tab"><strong>1.</strong>&nbsp;On the lock screen, click the&nbsp;<strong>Password Reset</strong>&nbsp;button.</p>
                                 <p class="tab"><strong>2.</strong>&nbsp;Enter your username and follow the prompts to verify your identity.</p>
                                 <p class="tab"><strong>3.</strong>&nbsp;Once verified, enter your new password and confirm it.</p>
@@ -2204,7 +2204,7 @@ $InstructSSPRButton = @"
 "@ 
 
 $InstructPhone = @"
-                                <p><img src="https://i.ibb.co/fd1kx454/icon-phone-alt-28.png" alt="Phone Icon">&nbsp;<strong>Call Aunalytics</strong>&nbsp;and request a password reset:</p>
+                                <p><img src="https://raw.githubusercontent.com/AU-Mark/PS-PasswordExpiryNotification/main/Source%20Files/Icons/Phone.png" alt="Phone Icon">&nbsp;<strong>Call Aunalytics</strong>&nbsp;and request a password reset:</p>
                                 <p class="tab"><strong>1.</strong>&nbsp;Call Aunalytics at phone number&nbsp;<strong>1-855-799-DATA (1-855-799-3282)</strong>.</p>
                                 <p class="tab"><strong>2.</strong>&nbsp;Request a password reset (Aunalytics will verify your identity before resetting your password)</p>
 "@ 
