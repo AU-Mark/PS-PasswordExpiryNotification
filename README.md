@@ -8,14 +8,14 @@ This script installs powershell files and configures a scheduled task that runs 
 
 ## Dependencies/Prerequisites
 The following modules are required and will be installed during installation to ensure the scripts run without error:
-ActiveDirectory
-CredentialManager
-Send-MailKitMessage
+*   ActiveDirectory
+*   CredentialManager
+*   Send-MailKitMessage
 
 ## Installation
 ### Run directly from github
 ```powershell
-iwr https://tinyurl.com/PS-PasswordExpiryNotification | iex
+iwr https://raw.githubusercontent.com/AU-Mark/PS-PasswordExpiryNotification/refs/heads/main/Install-PasswordExpiryNotification.ps1 | iex
 ```
 
 ### Download and execute the script
@@ -46,7 +46,7 @@ These are the options that will be able to be configured to dynamically craft th
 | SMTPPort | Integer | The SMTP port to use when sending the email |
 | SMTPTLS | Boolean | Use TLS when sending the email |
 | SenderEmail | String | The email address used to send the password expiration notification email |
-| EmailCredential | Boolean | True is a password credential is saved in Credential Manager |
+| EmailCredential | Boolean | AUPasswordExpiry password credential is saved in Credential Manager |
 
 #### Sample JSON File
 ```json
