@@ -1893,6 +1893,20 @@ Function Send-PasswordExpiry {
     }
 }
 
+# Function to check if a program is installed in both x86 and x64 registry paths
+Function Check-ProgramInstalled {
+    param (
+        [string]$ProgramName
+    )
+    $x86Path = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*"
+    $x64Path = "HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
+
+    $installedX86 = Get-ItemProperty -Path $x86Path | Where-Object { $_.DisplayName -like "*$ProgramName*" }
+    $installedX64 = Get-ItemProperty -Path $x64Path | Where-Object { $_.DisplayName -like "*$ProgramName*" }
+
+    return ($installedX86 -ne $null -or $installedX64 -ne $null)
+}
+
 ################################################################################################################################
 #                                                               Main                                                           #
 ################################################################################################################################
@@ -2189,6 +2203,19 @@ Function Install-SchedTask {
     Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description "Runs the password expiration notification script at the scheduled time to send password expiration emails to end users" | Out-Null
 }
 
+Function Check-ProgramInstalled {
+    param (
+        [string]$ProgramName
+    )
+    $x86Path = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*"
+    $x64Path = "HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
+
+    $installedX86 = Get-ItemProperty -Path $x86Path | Where-Object { $_.DisplayName -like "*$ProgramName*" }
+    $installedX64 = Get-ItemProperty -Path $x64Path | Where-Object { $_.DisplayName -like "*$ProgramName*" }
+
+    return ($installedX86 -ne $null -or $installedX64 -ne $null)
+}
+
 ################################################################################################################################
 #                                                               Main                                                           #
 ################################################################################################################################
@@ -2240,7 +2267,7 @@ Try {
         }
 
         Write-Color ' '
-        $FoundConfig = Prompt-Bool -PromptMessage "Would you like to use the found configuration?" -DefaultYes
+        $FoundConfig = Prompt-Bool -PromptMessage "Would you like to use this configuration?" -DefaultYes
         Write-Color ' '
 
         If (-not ($FoundConfig)) {
@@ -2255,9 +2282,14 @@ Try {
     Write-Color "Installation Complete!" -Color Green -L
     Write-Color ' '
 
-    $HTMLSample = Prompt-Bool -PromptMessage "Would you like to see a sample HTML email?"
-    If ($HTMLSample) {
-        Start-Process powershell -ArgumentList "-File `"$ScriptPath\PasswordExpiryNotification.ps1`" -Test" -Wait
+    # Open the HTML file with Chrome or Edge browser for viewing
+    $edgeInstalled = Check-ProgramInstalled -ProgramName "Microsoft Edge"
+    $chromeInstalled = Check-ProgramInstalled -ProgramName "Google Chrome"
+    if ($edgeInstalled -or $chromeInstalled) {
+        $HTMLSample = Prompt-Bool -PromptMessage "Would you like to see a sample HTML email?"
+        If ($HTMLSample) {
+            Start-Process powershell -ArgumentList "-File `"$ScriptPath\PasswordExpiryNotification.ps1`" -Test" -Wait
+        }
     }
 
     Write-Color -Text "Stay classy, Aunalytics" -Color Cyan -HorizontalCenter $True -LinesBefore 1
