@@ -51,6 +51,9 @@ These are the options that will be able to be configured to dynamically craft th
 | SenderEmail | String | The email address used to send the password expiration notification email |
 | EmailCredential | Boolean | AUPasswordExpiry password credential is saved in Credential Manager |
 
+#### Client Logo
+If a URL is provided the image will be downloaded and validated to check if it is a supported image type. It can be any width but will be resized in height to be 130px. I personally recommend a square PNG with transparent background sized to 130x130px.
+
 #### Sample JSON File
 ```json
 {
