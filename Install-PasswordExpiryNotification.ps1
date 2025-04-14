@@ -1960,7 +1960,7 @@ Try {
     }
 
     If (-not (Check-LogonAsBatchJobRights)) {
-        Write-Color "The current user $ENV:Username does not have `"Allow logon as batch job`" rights which are required for the scheduled task to run as the current logged on user. This may be configured in the local security policy or via GPO. Please ensure these rights are granted and then run this script again." -Color Red -L -LogLvl "ERROR"
+        Write-Color "The current user $ENV:Username does not have `"Log on as a batch job`" rights which are required for the scheduled task to run as the current logged on user. This may be configured in the local security policy or via GPO. If on a domain controller its typically configured in the Default Domain Controllers Policy GPO. Please ensure these rights are granted and then run this script again." -Color Red -L -LogLvl "ERROR"
         Exit 1
     }
 
@@ -2328,7 +2328,7 @@ Try {
     }
 
     If (-not (Check-LogonAsBatchJobRights)) {
-        Write-Color "The current user $ENV:Username does not have `"Allow logon as batch job`" rights which are required for the scheduled task to run as the current logged on user. This may be configured in the local security policy or via GPO. Please ensure these rights are granted and then run this script again." -Color Red -L -LogLvl "ERROR"
+        Write-Color "The current user $ENV:Username does not have `"Log on as a batch job`" rights which are required for the scheduled task to run as the current logged on user. This may be configured in the local security policy or via GPO. If on a domain controller its typically configured in the Default Domain Controllers Policy GPO. Please ensure these rights are granted and then run this script again." -Color Red -L -LogLvl "ERROR"
         Exit 1
     }
 
