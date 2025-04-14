@@ -1932,7 +1932,7 @@ function Check-LogonAsBatchJobRights {
     $policy = Get-Content "$env:TEMP\secpol.cfg"
 
     # Check if the user is listed in the "SeBatchLogonRight" policy
-    $hasRights = $policy -match "SeBatchLogonRight = .*`$env:USERNAME"
+    $hasRights = $policy -match "SeBatchLogonRight = .*$env:USERNAME"
 
     # Clean up the exported policy file
     Remove-Item "$env:TEMP\secpol.cfg"
@@ -2239,7 +2239,7 @@ function Check-LogonAsBatchJobRights {
     $policy = Get-Content "$env:TEMP\secpol.cfg"
 
     # Check if the user is listed in the "SeBatchLogonRight" policy
-    $hasRights = $policy -match "SeBatchLogonRight = .*`$env:USERNAME"
+    $hasRights = $policy -match "SeBatchLogonRight = .*$env:USERNAME"
 
     # Clean up the exported policy file
     Remove-Item "$env:TEMP\secpol.cfg"
