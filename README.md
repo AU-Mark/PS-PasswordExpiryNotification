@@ -16,7 +16,7 @@ The following PowerShell modules are required and will be installed during insta
 Send-MailKitMessage is a requirement because [Send-MailMessage has been deprecated](https://github.com/dotnet/platform-compat/blob/master/docs/DE0005.md) by Microsoft and should no longer be used.
 
 ### Prerequisies
-This script requires that the account running the script be configured with 'Allow logon as batch job' security permission. If you receive this error when you run the script you will need to modify the local security policy to allow the user account to run the scheduled task. If this setting is configured in a GPO it will need to be modified in that GPO.
+This script requires that the account running the script be configured with 'Log on as a batch job' security permission. If you receive this error when you run the script you will need to modify the local security policy to allow the user account to run the scheduled task. If this setting is configured in a GPO it will need to be modified in that GPO.
 
 ## Installation
 ### Run directly from github
