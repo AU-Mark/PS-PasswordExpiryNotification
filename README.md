@@ -12,10 +12,12 @@ The following modules are required and will be installed during installation to 
 *   CredentialManager
 *   [Send-MailKitMessage](https://www.powershellgallery.com/packages/send-mailkitmessage)
 
+Send-MailKitMessage is a requirement because [Send-MailMessage has been deprecated](https://github.com/dotnet/platform-compat/blob/master/docs/DE0005.md) by Microsoft and should no longer be used.
+
 ## Installation
 ### Run directly from github
 ```powershell
-iwr https://raw.githubusercontent.com/AU-Mark/PS-PasswordExpiryNotification/refs/heads/main/Install-PasswordExpiryNotification.ps1 | iex
+iwr https://raw.githubusercontent.com/AU-Mark/PS-PasswordExpiryNotification/main/Install-PasswordExpiryNotification.ps1 | iex
 ```
 
 ### Download and execute the script
@@ -36,6 +38,7 @@ These are the options that will be able to be configured to dynamically craft th
 | ClientName | String | The client's name, it will be used in the dynamic HTML generated during installation |
 | ClientURL | String | The client's URL, the clients logo will use this link |
 | ClientLogo | String | The client's logo, the https web URL or file path to a supported image extension (jpg,jpeg,png,gif,svg) |
+| ClientDomain | String | The client's DNS root of their domain. This is filled in automatically by the script if the client has a domain, otherwise its null |
 | ClientVPN | Boolean | Does the client have a VPN for employees to use? |
 | ClientAzure | Boolean | Does the client have Azure P1 or P2 licenses and password write-back enabled? |
 | ClientSSPR | Boolean | Does the client have self service password reset enabled? |
@@ -51,21 +54,21 @@ These are the options that will be able to be configured to dynamically craft th
 #### Sample JSON File
 ```json
 {
-    "SMTPTLS":  true,
-    "SMTPServer":  "smtp.office365.com",
-    "ClientSSPRLockScreen":  false,
     "ClientName":  "Acme Corporation",
-    "ClientDomain":  "ACME.LOCAL",
-    "ClientVPN":  true,
-    "SMTPMethod":  "SMTPAUTH",
-    "EmailCredential":  true,
-    "ClientSSPR":  false,
     "ClientURL":  "https://www.acmecorporation.com",
     "ClientLogo":  "https://th.bing.com/th/id/OIP.xDPJweY9GNABbZVUcw4TcwHaHa?rs=1\u0026pid=ImgDetMain",
-    "SMTPPort":  587,
+    "ClientDomain":  "ACME.LOCAL",
+    "ClientVPN":  true,
     "ClientAzure":  true,
+    "ClientSSPR":  false,
+    "ClientSSPRLockScreen":  false,
+    "ExpireDays":  14,
+    "SMTPMethod":  "SMTPAUTH",
+    "SMTPServer":  "smtp.office365.com",
+    "SMTPPort":  587,
+    "SMTPTLS":  true,
     "SenderEmail":  "noreply@acmecorporation.com",
-    "ExpireDays":  14
+    "EmailCredential":  true
 }
 ```
 ## Source Files
