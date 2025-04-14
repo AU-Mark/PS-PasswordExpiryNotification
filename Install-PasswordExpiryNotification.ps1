@@ -1945,29 +1945,29 @@ function Check-LogonAsBatchJobRights {
 ################################################################################################################################
 Try {
     If ((Check-ModuleStatus -Name "CredentialManager" -Silent $True) -eq $False) {
-        Write-Color "CredentialManager module was not found. Please install this module for this script to run properly. Exiting script..." -Color Red -L
+        Write-Color "CredentialManager module was not found. Please install this module for this script to run properly. Exiting script..." -Color Red -L -LinesBefore 1
         Exit
     } 
 
     If ((Check-ModuleStatus -Name "Send-MailKitMessage" -Silent $True) -eq $False) {
-        Write-Color "Send-MailKitMessage module was not found. Please install this module for this script to run properly. Exiting script..." -Color Red -L
+        Write-Color "Send-MailKitMessage module was not found. Please install this module for this script to run properly. Exiting script..." -Color Red -L -LinesBefore 1
         Exit
     } 
 
     If ((Check-ModuleStatus -Name "ActiveDirectory" -Silent $True) -eq $False) {
-        Write-Color "ActiveDirectory module was not found. Please install this module for this script to run properly. Exiting script..." -Color Red -L
+        Write-Color "ActiveDirectory module was not found. Please install this module for this script to run properly. Exiting script..." -Color Red -L -LinesBefore 1
         Exit
     }
 
     If (-not (Check-LogonAsBatchJobRights)) {
-        Write-Color "The current user $ENV:Username does not have `"Log on as a batch job`" rights which are required for the scheduled task to run as the current logged on user. This may be configured in the local security policy or via GPO. If on a domain controller its typically configured in the Default Domain Controllers Policy GPO. Please ensure these rights are granted and then run this script again." -Color Red -L -LogLvl "ERROR"
+        Write-Color "The current user $ENV:Username does not have `"Log on as a batch job`" rights which are required for the scheduled task to run as the current logged on user. This may be configured in the local security policy or via GPO. If on a domain controller its typically configured in the Default Domain Controllers Policy GPO. Please ensure these rights are granted and then run this script again." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
         Exit 1
     }
 
     # Get Users From AD who are Enabled, Passwords Expire and are Not Currently Expired
     If (Check-ModuleStatus -Name "ActiveDirectory") {
 
-        Write-Color "Checking for client config..." -Color White -L
+        Write-Color "Checking for client config..." -Color White -L -LinesBefore 1
         $clientConfig = Get-ClientConfig
 
         $Users = Get-ADUser -Filter * -Properties Name, PasswordNeverExpires, PasswordExpired, PasswordLastSet, EmailAddress, sAMAccountName | Where-Object {$_.Enabled -eq "True"} | Where-Object { $_.PasswordNeverExpires -eq $false } | Where-Object { $_.passwordexpired -eq $false }
@@ -2332,7 +2332,7 @@ Try {
         Exit 1
     }
 
-    Write-Color "Checking for client config..." -Color White -L
+    Write-Color "Checking for client config..." -Color White -L -LinesBefore 1
     $clientConfig = Get-ClientConfig
 
     If ($clientConfig) {
