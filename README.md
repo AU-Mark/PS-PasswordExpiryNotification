@@ -35,7 +35,7 @@ The following SMTP Send Methods are available for configuration:
 *   SMTPRELAY (Custom options configured during installation)
 
 #### SMTPAUTH
-If you are planning to use one of the SMTPAUTH methods with a dedicated mailbox to send emails, you will need to generate an app password and use that when the script asks you to enter the password. OAuth2 support is not provided in this script.
+If you are planning to use one of the SMTPAUTH methods with a dedicated mailbox to send emails, you will need to generate an app password and use that when the script asks you to enter the password. Additionally you will need to disable security defaults in the client's Azure AD tenant or use a High Volume Email account. OAuth2 support is not provided in this script.
 
 #### SMTPNOAUTH
 If you are planning to use one of the SMTPNOAUTH methods you will need to ensure the client has a static IP address where the server is located and that IP address has been added to the client's SPF DNS record. Otherwise the emails may be flagged as SPAM.
