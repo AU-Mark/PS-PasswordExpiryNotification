@@ -1,6 +1,6 @@
 # PS-PasswordExpiryNotification
 <p align="center">
-    <img src="https://raw.githubusercontent.com/AU-Mark/PS-PasswordExpiryNotification/refs/heads/main/Source%20Files/PS-PasswordExpiryNotification.png" />
+    <img src="https://raw.githubusercontent.com/AU-Mark/PS-PasswordExpiryNotification/main/Source%20Files/PS-PasswordExpiryNotification.png" />
 </p>
 
 ## Description
@@ -38,7 +38,7 @@ These are the options that will be able to be configured to dynamically craft th
 | ClientName | String | The client's name, it will be used in the dynamic HTML generated during installation |
 | ClientURL | String | The client's URL, the clients logo will use this link |
 | ClientLogo | String | The client's logo, the https web URL or file path to a supported image extension (jpg,jpeg,png,gif,svg) |
-| ClientDomain | String | The client's DNS root of their domain. This is filled in automatically by the script if the client has a domain, otherwise its null |
+| ClientDomain | String/Boolean | The client's DNS root of their domain. This is filled in automatically by the script if the client has a domain, otherwise its false |
 | ClientVPN | Boolean | Does the client have a VPN for employees to use? |
 | ClientAzure | Boolean | Does the client have Azure P1 or P2 licenses and password write-back enabled? |
 | ClientSSPR | Boolean | Does the client have self service password reset enabled? |
@@ -52,7 +52,16 @@ These are the options that will be able to be configured to dynamically craft th
 | EmailCredential | Boolean | AUPasswordExpiry password credential is saved in Credential Manager |
 
 #### Client Logo
-If a URL is provided the image will be downloaded and validated to check if it is a supported image type. It can be any width but will be resized in height to be 130px. I personally recommend a square PNG with transparent background sized to 130x130px.
+##### Validation
+If a URL is provided the image will be downloaded and validated to check if it is a supported image type. If a file path is provided the extension will be validated to check if it is a supported image type. 
+
+##### Sizing
+It can be any width but will be resized in height to be 130px. I personally recommend a square PNG with transparent background sized to 130x130px.
+
+##### Image Hosting
+Client Logos can be hosted anywhere on the internet, however those links are subject to change by the website owners at any time. I would recommend creating a github repository and uploading the logos to it, then use the raw links to the logo directly from github. This site can be used to retrieve raw links to files easily, just copy and paste the github link to the file.
+
+https://git-rawify.vercel.app/
 
 #### Sample JSON File
 ```json
