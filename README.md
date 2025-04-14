@@ -30,9 +30,9 @@ Download and execute Install-PasswordExpiryNotification.ps1. The main scripts ar
 ## Options
 ### Supported SMTP Send Methods
 The following SMTP Send Methods are available for configuration:
-*   SMTPAUTH (Office 365, Gmail, Zoho, Outlook, iCloud, Other)
-*   SMTPNOAUTH (Office 365 Direct Send, Google Restricted SMTP)
-*   SMTPRELAY (Custom options configured during installation)
+*   SMTPNOAUTH (Office 365 Direct Send, Google Restricted SMTP) [Recommended, See details below]
+*   SMTPRELAY (Custom options configured during installation) [Recommended]
+*   SMTPAUTH (Office 365, Gmail, Zoho, Outlook, iCloud, Other) [See details below]
 
 #### SMTPAUTH
 If you are planning to use one of the SMTPAUTH methods with a dedicated mailbox to send emails, you will need to generate an app password and use that when the script asks you to enter the password. Additionally you will need to disable security defaults in the client's Azure AD tenant or use a High Volume Email account. OAuth2 support is not provided in this script.
