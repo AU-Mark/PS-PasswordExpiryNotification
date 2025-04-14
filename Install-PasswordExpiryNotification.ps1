@@ -1907,6 +1907,23 @@ Function Check-ProgramInstalled {
     return ($installedX86 -ne $null -or $installedX64 -ne $null)
 }
 
+# Function to check if the current user has "Log on as a batch job" rights# Function to check if the current user has "Allow log on as a batch job" rights
+function Check-LogonAsBatchJobRights {
+    # Export the local security policy
+    secedit /export /cfg "$env:TEMP\secpol.cfg" | Out-Null
+
+    # Read the policy file
+    $policy = Get-Content "$env:TEMP\secpol.cfg"
+
+    # Check if the user is listed in the "SeBatchLogonRight" policy
+    $hasRights = $policy -match "SeBatchLogonRight = .*`$env:USERNAME"
+
+    # Clean up the exported policy file
+    Remove-Item "$env:TEMP\secpol.cfg"
+
+    return $hasRights
+}
+
 ################################################################################################################################
 #                                                               Main                                                           #
 ################################################################################################################################
@@ -1924,6 +1941,11 @@ Try {
     If ((Check-ModuleStatus -Name "ActiveDirectory" -Silent $True) -eq $False) {
         Write-Color "ActiveDirectory module was not found. Please install this module for this script to run properly. Exiting script..." -Color Red -L
         Exit
+    }
+
+    If (-not (Check-LogonAsBatchJobRights)) {
+        Write-Color "The current user $ENV:Username does not have `"Allow logon as batch job`" rights which are required for the scheduled task to run. This may be configured in the local security policy or via GPO. Please ensure these rights are granted and then run this script again." -Color Red -L -LogLvl "ERROR"
+        Exit 1
     }
 
     # Get Users From AD who are Enabled, Passwords Expire and are Not Currently Expired
@@ -2192,7 +2214,31 @@ $EmailBody = $EmailBody + $HTMLEnd
     $PasswordExpiryHTML | Out-File "$ScriptPath\PasswordExpiryHTML.ps1" -Force
 }
 
+# Function to check if the current user has "Log on as a batch job" rights# Function to check if the current user has "Allow log on as a batch job" rights
+function Check-LogonAsBatchJobRights {
+    # Export the local security policy
+    secedit /export /cfg "$env:TEMP\secpol.cfg" | Out-Null
+
+    # Read the policy file
+    $policy = Get-Content "$env:TEMP\secpol.cfg"
+
+    # Check if the user is listed in the "SeBatchLogonRight" policy
+    $hasRights = $policy -match "SeBatchLogonRight = .*`$env:USERNAME"
+
+    # Clean up the exported policy file
+    Remove-Item "$env:TEMP\secpol.cfg"
+
+    return $hasRights
+}
+
 Function Install-SchedTask {
+    # Check if the current user has "Allow log on as a batch job" rights
+    if (Check-LogonAsBatchJobRights) {
+        Write-Output "$currentUser has 'Allow log on as a batch job' rights."
+    } else {
+        Write-Output "$currentUser does not have 'Allow log on as a batch job' rights."
+    }
+
     $TaskName = "Password Expiry Email Notification"
 
     # Check if the scheduled task exists
@@ -2265,6 +2311,11 @@ Try {
         New-Item -ItemType Directory -Path $ScriptPath -Force | Out-Null
     }
 
+    If (-not (Check-LogonAsBatchJobRights)) {
+        Write-Color "The current user $ENV:Username does not have `"Allow logon as batch job`" rights which are required for the scheduled task to run. This may be configured in the local security policy or via GPO. Please ensure these rights are granted and then run this script again." -Color Red -L -LogLvl "ERROR"
+        Exit 1
+    }
+
     Write-Color "Checking for client config..." -Color White -L
     $clientConfig = Get-ClientConfig
 
@@ -2296,13 +2347,14 @@ Try {
     if ($edgeInstalled -or $chromeInstalled) {
         $HTMLSample = Prompt-Bool -PromptMessage "Would you like to see a sample HTML email?"
         If ($HTMLSample) {
-            Start-Process powershell -ArgumentList "-File `"$ScriptPath\PasswordExpiryNotification.ps1`" -Test" -Wait
+            Start-Process powershell -ArgumentList "-File `"$ScriptPath\PasswordExpiryNotification.ps1`" -Test"
         }
     }
 
     Write-Color -Text "Stay classy, Aunalytics" -Color Cyan -HorizontalCenter $True -LinesBefore 1
 } Catch {
     Write-Color -Text "Err Line: ","$($_.InvocationInfo.ScriptLineNumber)","Err Name: ","$($_.Exception.GetType().FullName) ","Err Msg: ","$($_.Exception.Message)" -Color Red,Magenta,Red,Magenta,Red,Magenta
+    Exit 1
 } finally {
         Write-Host -NoNewLine 'Press any key to exit...';
         $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
