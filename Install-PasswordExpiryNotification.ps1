@@ -1023,10 +1023,10 @@ Function Get-ClientConfig {
 
             # Add client config
             $clientConfig = Add-ClientConfig
-        }
 
-        # Return the hashtable content
-        Return $clientConfig
+            # Return the hashtable content
+            Return $clientConfig
+        }
     }
 }
 
@@ -1887,10 +1887,10 @@ Function Add-ClientConfig {
     # Define the questions and answers for the SMTP Send Method
     $question = "What SMTP send method will be used?"
     $answers = [ordered]@{
+        "Microsoft 365 Graph API: Requires App Registration setup in the client's tenant (Recommended)" = "SMTPGRAPH"
         "SMTP AUTH: Office 365, Gmail, Zoho, Outlook, iCloud, Other" = "SMTPAUTH"
         "SMTP Relay: Manual Setup" = "SMTPRELAY"
         "Unauthenticated SMTP: Office 365 Direct Send, Gmail Restricted SMTP" = "SMTPNOAUTH"
-        "Microsoft 365 Graph API: Requires App Registration setup in the client's tenant" = "SMTPGRAPH"
     }
 
     # Prompt the question to the user
@@ -2062,10 +2062,10 @@ Function Get-ClientConfig {
 
             # Add client config
             $clientConfig = Add-ClientConfig
-        }
 
-        # Return the hashtable content
-        Return $clientConfig
+            # Return the hashtable content
+            Return $clientConfig
+        }
     }
 }
 
