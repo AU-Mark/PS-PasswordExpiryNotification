@@ -69,6 +69,9 @@ The following SMTP Send Methods are available for configuration:
 
 ***
 
+### Credentials
+If you select to use SMTPGRAPH, SMTPAUTH, or SMTPRELAY with user authorization required you will be prompted to enter the client secret or account password. These credentials are stored securely in the Windows Credential Manager using the CredentialManager powershell module and are only accessible by the user account that installs and runs the script.
+
 ### JSON Config
 These are the options that will be configured and saved to dynamically craft the HTML body and send the email. You can preinstall a JSON file with these options configured in C:\Scripts\AUPasswordExpiry prior to installation or running the main script and it will be detected automatically.
 #### Table of JSON Config Variable
