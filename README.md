@@ -4,7 +4,9 @@
 </p>
 
 ## Description
-This script installs powershell files and configures a scheduled task that runs daily at 8am and processes all Active Directory users that are enabled without password never expires checked in their account options. Any account that has a password that is going to expire within the configurable number of days (Default is 14) will be sent an email to their email address in the email address field of their Active Directory account. This email is dynamically crafted based on options configured during installation that are saved in a JSON config file. The JSON config file can be recreated if it's missing by deleting the config file and either running the installation script OR the main script in an interactive powershell session after installation.
+This script installs powershell files and configures a scheduled task that runs daily at 8am and processes all Active Directory users that are enabled without password never expires checked in their account options. Any account that has a password that is going to expire within the configurable number of days (Default is 14) will be sent an email to their email address. 
+
+The email is dynamically crafted based on options configured during installation that are saved in a JSON config file. The JSON config file can be recreated if it's missing by deleting the config file and either running the installation script OR the main script in an interactive powershell session after installation.
 
 ## Dependencies/Prerequisites
 ### Dependencies
@@ -30,15 +32,21 @@ Download and execute Install-PasswordExpiryNotification.ps1. The main scripts ar
 ## Options
 ### Supported SMTP Send Methods
 The following SMTP Send Methods are available for configuration:
+*   SMTPAUTH (Office 365, Gmail, Zoho, Outlook, iCloud, Other) [See details below]
 *   SMTPNOAUTH (Office 365 Direct Send, Google Restricted SMTP) [Recommended, See details below]
 *   SMTPRELAY (Custom options configured during installation) [Recommended]
-*   SMTPAUTH (Office 365, Gmail, Zoho, Outlook, iCloud, Other) [See details below]
+
 
 #### SMTPAUTH
-If you are planning to use one of the SMTPAUTH methods with a dedicated mailbox to send emails, you will need to generate an app password and use that when the script asks you to enter the password. Additionally you will need to disable security defaults in the client's Azure AD tenant or use a High Volume Email account. OAuth2 support is not provided in this script.
+If you are planning to use one of the SMTPAUTH methods with a dedicated mailbox to send emails, you will need to generate an app password for the account and use that when the script asks you to enter the password. Additionally you will need to disable security defaults in the client's Azure AD tenant. OAuth2 support is not provided in this script.
 
 #### SMTPNOAUTH
 If you are planning to use one of the SMTPNOAUTH methods you will need to ensure the client has a static IP address where the server is located and that IP address has been added to the client's SPF DNS record. Otherwise the emails may be flagged as SPAM.
+
+#### SMTPRELAY
+All options are asked during configuration so you can tailor the connection to your setup. If you need help setting up a SMTP relay to Office 365 you can use the guide below.
+
+https://microsoftgeek.com/?p=1520
 
 ### JSON Options
 These are the options that will be configured and saved to dynamically craft the HTML body and send the email. You can preinstall a JSON file with these options configured in C:\Scripts\AUPasswordExpiry prior to installation or running the main script and it will be detected automatically.
