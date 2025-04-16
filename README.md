@@ -25,6 +25,7 @@ This script requires that the account running the script be configured with 'Log
 ```powershell
 iwr https://raw.githubusercontent.com/AU-Mark/PS-PasswordExpiryNotification/main/Install-PasswordExpiryNotification.ps1 | iex
 ```
+### OR
 
 ### Download and execute the script
 Download and execute Install-PasswordExpiryNotification.ps1. The main scripts are embedded within and installed during execution after the options are configured.
