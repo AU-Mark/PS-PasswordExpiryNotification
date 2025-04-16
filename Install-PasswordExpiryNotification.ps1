@@ -739,7 +739,7 @@ Function Create-NewCredential {
         # Store the credential in Credential Manager
         New-StoredCredential -Target AUPasswordExpiry -Username $ClientID -Password $ClientSecret -Persist LocalMachine | Out-Null
 
-        Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
+        Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1 -LinesAfter 1
 
         return $ClientID
     } Else {
@@ -749,7 +749,7 @@ Function Create-NewCredential {
         # Store the credential in Credential Manager
         New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -Password $SenderPassword -Persist LocalMachine | Out-Null
 
-        Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
+        Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1 -LinesAfter 1
     }
 }
 
@@ -956,7 +956,7 @@ Function Get-ClientConfig {
     $configUpdated = $False
 
     # Define the path to the JSON file
-    $jsonFilePath = "$PSScriptRoot\clientconf.json"
+    $jsonFilePath = "$ScriptPath\clientconf.json"
 
     # Check if the file exists
     if (Test-Path -Path $jsonFilePath) {
@@ -1015,7 +1015,7 @@ Function Get-ClientConfig {
         $noninteractive = ([Environment]::GetCommandLineArgs() -contains '-NonInteractive')
 
         If ($noninteractive) {
-            Write-Color "Cannot create client config json file while running in a non-interactive session. Please launch $PSScriptRoot\PasswordExpiryEmail.ps1 in an interactive powershell session to create a new client configuration" -Color Red -L -LogLvl "ERROR" -NoConsoleOutput
+            Write-Color "Cannot create client config json file while running in a non-interactive session. Please launch $ScriptPath\PasswordExpiryEmail.ps1 in an interactive powershell session to create a new client configuration" -Color Red -L -LogLvl "ERROR" -NoConsoleOutput
             Exit
         } Else {
             # No client config was found, create a new one
