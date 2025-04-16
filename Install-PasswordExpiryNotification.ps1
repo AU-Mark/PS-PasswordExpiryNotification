@@ -507,16 +507,17 @@ function Prompt-Input {
     }
 
     If ($Password) {
-        Write-Color -Text "Enter the password a second time to confirm" -Color White -NoNewline; $prompt2 = Read-Host "$zeroWidthSpace" -AsSecureString
+        Write-Color -Text "$PromptMessage second time to confirm" -Color White -NoNewline; $prompt2 = Read-Host "$zeroWidthSpace" -AsSecureString
 
         # Convert secure strings to plain text
-        $plainText1 = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($prompt))
-        $plainText2 = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($prompt2))
-
+        $plainText1 = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($prompt))
+        $plainText2 = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($prompt2))
+        
         If ($plainText1 -eq $plainText2) {
             Return $plainText1
         } Else {
             Write-Color "The passwords entered did not match! Please try again..." -Color Yellow -LinesBefore 1 -LinesAfter 1
+            Prompt-Input -PromptMessage $PromptMessage -Password -Required
         }
     } Else {
         Write-Color "You entered:"," $prompt" -Color White,Green -LinesAfter 1 -LinesBefore 1
@@ -736,7 +737,7 @@ Function Create-NewCredential {
         $ClientSecret = Prompt-Input -PromptMessage "Enter the Client Secret" -Password -Required
 
         # Store the credential in Credential Manager
-        New-StoredCredential -Target AUPasswordExpiry -Username $ClientID -SecurePassword $ClientSecret -Persist LocalMachine | Out-Null
+        New-StoredCredential -Target AUPasswordExpiry -Username $ClientID -Password $ClientSecret -Persist LocalMachine | Out-Null
 
         Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
 
@@ -746,7 +747,7 @@ Function Create-NewCredential {
         $SenderPassword = Prompt-Input -PromptMessage "Enter the password for the account" -Password -Required
 
         # Store the credential in Credential Manager
-        New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -SecurePassword $SenderPassword -Persist LocalMachine | Out-Null
+        New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -Password $SenderPassword -Persist LocalMachine | Out-Null
 
         Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
     }
@@ -1545,16 +1546,17 @@ function Prompt-Input {
     }
 
     If ($Password) {
-        Write-Color -Text "Enter the password a second time to confirm" -Color White -NoNewline; $prompt2 = Read-Host "$zeroWidthSpace" -AsSecureString
+        Write-Color -Text "$PromptMessage second time to confirm" -Color White -NoNewline; $prompt2 = Read-Host "$zeroWidthSpace" -AsSecureString
 
         # Convert secure strings to plain text
-        $plainText1 = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($prompt))
-        $plainText2 = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($prompt2))
-
+        $plainText1 = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($prompt))
+        $plainText2 = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($prompt2))
+        
         If ($plainText1 -eq $plainText2) {
             Return $plainText1
         } Else {
             Write-Color "The passwords entered did not match! Please try again..." -Color Yellow -LinesBefore 1 -LinesAfter 1
+            Prompt-Input -PromptMessage $PromptMessage -Password -Required
         }
     } Else {
         Write-Color "You entered:"," $prompt" -Color White,Green -LinesAfter 1 -LinesBefore 1
@@ -1774,7 +1776,7 @@ Function Create-NewCredential {
         $ClientSecret = Prompt-Input -PromptMessage "Enter the Client Secret" -Password -Required
 
         # Store the credential in Credential Manager
-        New-StoredCredential -Target AUPasswordExpiry -Username $ClientID -SecurePassword $ClientSecret -Persist LocalMachine | Out-Null
+        New-StoredCredential -Target AUPasswordExpiry -Username $ClientID -Password $ClientSecret -Persist LocalMachine | Out-Null
 
         Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
 
@@ -1784,7 +1786,7 @@ Function Create-NewCredential {
         $SenderPassword = Prompt-Input -PromptMessage "Enter the password for the account" -Password -Required
 
         # Store the credential in Credential Manager
-        New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -SecurePassword $SenderPassword -Persist LocalMachine | Out-Null
+        New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -Password $SenderPassword -Persist LocalMachine | Out-Null
 
         Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
     }
