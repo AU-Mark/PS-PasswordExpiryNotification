@@ -1965,7 +1965,7 @@ Function Add-ClientConfig {
     $json = $clientConfig | ConvertTo-Json -Depth 3
 
     # Save the JSON to a file
-    $json | Out-File -FilePath "$ScriptPath\clientconf.json" -Encoding utf8 -Force
+    $json | Out-File -FilePath "$PSScriptRoot\clientconf.json" -Encoding utf8 -Force
 
     # Return the hashtable content
     Return $clientConfig
@@ -2025,14 +2025,14 @@ Function Get-ClientConfig {
                 $json = $clientConfig | ConvertTo-Json -Depth 3
 
                 # Save the JSON to a file
-                $json | Out-File -FilePath "$ScriptPath\clientconf.json" -Encoding utf8 -Force
+                $json | Out-File -FilePath "$PSScriptRoot\clientconf.json" -Encoding utf8 -Force
             }
 
             # Client config loaded successfully
             Write-Color "Client configuration loaded successfully."
 
             If ($clientConfig["EmailCredential"]) {
-                Get-ClientCredential -SMTPMethod $clientConfig["SMTPMethod"]
+                $ClientCredential = Get-ClientCredential -SMTPMethod $clientConfig["SMTPMethod"]
             }
 
             # Return the hashtable content
@@ -2339,7 +2339,7 @@ Try {
         }
     } 
 } Catch {
-    Write-Color -Text "Err Line: ","$($_.InvocationInfo.ScriptLineNumber)","Err Name: ","$($_.Exception.GetType().FullName) ","Err Msg: ","$($_.Exception.Message)" -Color Red,Magenta,Red,Magenta,Red,Magenta -L -LogLvl "ERROR"
+    Write-Color -Text "Err Line: ","$($_.InvocationInfo.ScriptLineNumber) ","Err Name: ","$($_.Exception.GetType().FullName) ","Err Msg: ","$($_.Exception.Message)" -Color Red,Magenta,Red,Magenta,Red,Magenta -L -LogLvl "ERROR"
     Exit 1
 }
 
