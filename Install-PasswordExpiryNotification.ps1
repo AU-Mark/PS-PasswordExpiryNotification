@@ -993,7 +993,7 @@ Function Get-ClientConfig {
             Write-Color "Client configuration loaded successfully."
 
             If ($clientConfig["EmailCredential"]) {
-                Get-ClientCredential -SMTPMethod $clientConfig["SMTPMethod"]
+                $ClientCredential = Get-ClientCredential -SMTPMethod $clientConfig["SMTPMethod"]
             }
 
             # Return the hashtable content
