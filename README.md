@@ -37,30 +37,42 @@ The following SMTP Send Methods are available for configuration:
 *   SMTPNOAUTH (Office 365 Direct Send, Google Restricted SMTP) [See details below]
 *   SMTPRELAY (Custom options configured during installation)
 
+***
+
 #### SMTPGRAPH
-This method will allow the script to send emails using the Graph API with application permissions. A guide to configuring the app registration to get the Tenant ID, Client/App ID, and Client Secret is linked below.
+> This method will allow the script to send emails using the Graph API with application permissions. A guide to configuring the app registration to get the Tenant ID, Client/App ID, and Client Secret is linked below. 
+> 
+> ⚠️ Mail.ReadWrite permission is also required when the size of email is above 4MB.
+> 
+> https://www.starwindsoftware.com/blog/sending-an-email-from-azure-using-microsoft-graph-api/
+> 
+> ⚠️ SMTP.Send application permissions allow the script to send as any account in the tenant. If you'd like to limit the scope to just a single email address for added security you will need to configure an application access policy and apply it to the Entra ID application you created.
+> 
+> https://learn.microsoft.com/en-us/graph/auth-limit-mailbox-access
 
-https://www.starwindsoftware.com/blog/sending-an-email-from-azure-using-microsoft-graph-api/
-
-SMTP.Send application permissions allow the script to send as any account in the tenant. If you'd like to limit the scope to just a single email address for added security you will need to configure an application access policy and apply it to the Entra ID application you created.
-
-https://learn.microsoft.com/en-us/graph/auth-limit-mailbox-access
+***
 
 #### SMTPAUTH
-If you are planning to use one of the SMTPAUTH methods with a dedicated mailbox to send emails, you will need to generate an app password for the account and use that when the script asks you to enter the password. Additionally you will need to disable security defaults in the client's Azure AD tenant. OAuth2 support is not provided in this script.
+> If you are planning to use one of the SMTPAUTH methods with a dedicated mailbox to send emails, you will need to generate an app password for the account and use that when the script asks you to enter the password. Additionally you will need to disable security defaults in the client's Azure AD tenant. OAuth2 support is not provided in this script.
+
+***
 
 #### SMTPNOAUTH
-If you are planning to use one of the SMTPNOAUTH methods you will need to ensure the client has a static IP address where the server is located and that IP address has been added to the client's SPF DNS record. Otherwise the emails may be flagged as SPAM.
+> If you are planning to use one of the SMTPNOAUTH methods you will need to ensure the client has a static IP address where the server is located and that IP address has been added to the client's SPF DNS record. Otherwise the emails may be flagged as SPAM.
+
+***
 
 #### SMTPRELAY
-All options are asked during configuration so you can tailor the connection to your setup. If you need help setting up a SMTP relay to Office 365 you can use the guide below.
+> All options are asked during configuration so you can tailor the connection to your setup. If you need help setting up a SMTP relay to Office 365 you can use the guide below.
+> 
+> https://microsoftgeek.com/?p=1520
 
-https://microsoftgeek.com/?p=1520
+***
 
-### JSON Options
+### JSON Config
 These are the options that will be configured and saved to dynamically craft the HTML body and send the email. You can preinstall a JSON file with these options configured in C:\Scripts\AUPasswordExpiry prior to installation or running the main script and it will be detected automatically.
-#### Individual Options
-| Option | Type | Description |
+#### Table of JSON Config Variable
+| Variable | Type | Description |
 | --- | --- | --- |
 | ClientName | String | The client's name, it will be used in the dynamic HTML generated during installation |
 | ClientURL | String | The client's URL, the clients logo will use this link |
@@ -79,6 +91,8 @@ These are the options that will be configured and saved to dynamically craft the
 | SenderEmail | String | The email address used to send the password expiration notification email |
 | EmailCredential | Boolean | AUPasswordExpiry password credential is saved in Credential Manager |
 
+***
+
 #### Client Logo
 ##### Validation
 If a URL is provided the image will be downloaded and validated to check if it is a supported image type. If a file path is provided the extension will be validated to check if it is a supported image type. 
@@ -90,6 +104,8 @@ It can be any width but will be resized in height to be 130px. I personally reco
 Client Logos can be hosted anywhere on the internet, however those links are subject to change by the website owners at any time. I would recommend creating a github repository and uploading the logos to it, then use the raw links to the logo directly from github. This site can be used to retrieve raw links to files easily, just copy and paste the github link to the file.
 
 https://git-rawify.vercel.app/
+
+***
 
 #### Sample JSON File
 ```json
@@ -112,5 +128,6 @@ https://git-rawify.vercel.app/
     "EmailCredential":  true
 }
 ```
+
 ## Source Files
 This folder contains the source files of the embedded files contained within the installation script and the HTML files used to visualize the HTML code during development.
