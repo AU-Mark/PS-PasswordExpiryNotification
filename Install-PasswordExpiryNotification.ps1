@@ -741,15 +741,13 @@ Function Create-NewCredential {
 
         return $ClientID
     } Else {
-        $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail -Required
-        $SenderPassword = Prompt-Input -PromptMessage "Enter the app password for the email account" -Password -Required
+        $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account we will authenticate with" -ValidateEmail -Required
+        $SenderPassword = Prompt-Input -PromptMessage "Enter the password for the account" -Password -Required
 
         # Store the credential in Credential Manager
         New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -SecurePassword $SenderPassword -Persist LocalMachine | Out-Null
 
         Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
-
-        return $SenderEmail
     }
 }
 
@@ -807,7 +805,8 @@ Function Add-ClientConfig {
             $SMTPMethod = $SMTPChoice
             $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod
             $SMTPTLS = $True
-            $SenderEmail = Create-NewCredential
+            Create-NewCredential
+            $SenderEmail = Prompt-Input -PromptMessage "Enter the email address that will send the email" -ValidateEmail
             $EmailCredential = $True
         }
         "SMTPRELAY" {
@@ -816,25 +815,26 @@ Function Add-ClientConfig {
             $SMTPTLS = Prompt-Bool -PromptMessage "Does this SMTP Relay required TLS?"
             $DedicatedEmail = Prompt-Bool -PromptMessage "Does this SMTP Relay required user authentication?"
             If ($DedicatedEmail) {
-                $SenderEmail = Create-NewCredential
-                EmailCredential = $True
+                Create-NewCredential
+                $SenderEmail = Prompt-Input -PromptMessage "Enter the email address that will send the email" -ValidateEmail
+                $EmailCredential = $True
             } Else {
-                $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail
+                $SenderEmail = Prompt-Input -PromptMessage "Enter the email address that will send the email" -ValidateEmail
             }
         }
         "SMTPNOAUTH" {
             $SMTPMethod = $SMTPChoice
             $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod
             $SMTPTLS = $True
-            $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail
+            $SenderEmail = Prompt-Input -PromptMessage "Enter the email address that will send the email" -ValidateEmail
             $EmailCredential = $False
         }
         "SMTPGRAPH" {
             $SMTPMethod = $SMTPChoice
             $TenantID = Prompt-Input -PromptMessage "Enter the client's Tenant ID" -Required
-            $ClientID = Create-NewCredential -Graph
+            Create-NewCredential -Graph
             $SMTPTLS = $True
-            $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail
+            $SenderEmail = Prompt-Input -PromptMessage "Enter the email address that will send the email" -ValidateEmail
             $EmailCredential = $True
         }
     }
@@ -893,7 +893,7 @@ Function Get-ClientConfig {
     $configUpdated = $False
 
     # Define the path to the JSON file
-    $jsonFilePath = "$ScriptPath\clientconf.json"
+    $jsonFilePath = "$PSScriptRoot\clientconf.json"
 
     # Check if the file exists
     if (Test-Path -Path $jsonFilePath) {
@@ -992,7 +992,7 @@ Function Get-ClientConfig {
         $noninteractive = ([Environment]::GetCommandLineArgs() -contains '-NonInteractive')
 
         If ($noninteractive) {
-            Write-Color "Cannot create client config json file while running in a non-interactive session. Please launch $ScriptPath\PasswordExpiryEmail.ps1 in an interactive powershell session to create a new client configuration" -Color Red -L -LogLvl "ERROR" -NoConsoleOutput
+            Write-Color "Cannot create client config json file while running in a non-interactive session. Please launch $PSScriptRoot\PasswordExpiryEmail.ps1 in an interactive powershell session to create a new client configuration" -Color Red -L -LogLvl "ERROR" -NoConsoleOutput
             Exit
         } Else {
             # No client config was found, create a new one
@@ -1757,15 +1757,13 @@ Function Create-NewCredential {
 
         return $ClientID
     } Else {
-        $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail -Required
-        $SenderPassword = Prompt-Input -PromptMessage "Enter the app password for the email account" -Password -Required
+        $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account we will authenticate with" -ValidateEmail -Required
+        $SenderPassword = Prompt-Input -PromptMessage "Enter the password for the account" -Password -Required
 
         # Store the credential in Credential Manager
         New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -SecurePassword $SenderPassword -Persist LocalMachine | Out-Null
 
         Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
-
-        return $SenderEmail
     }
 }
 
@@ -1823,7 +1821,8 @@ Function Add-ClientConfig {
             $SMTPMethod = $SMTPChoice
             $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod
             $SMTPTLS = $True
-            $SenderEmail = Create-NewCredential
+            Create-NewCredential
+            $SenderEmail = Prompt-Input -PromptMessage "Enter the email address that will send the email" -ValidateEmail
             $EmailCredential = $True
         }
         "SMTPRELAY" {
@@ -1832,25 +1831,26 @@ Function Add-ClientConfig {
             $SMTPTLS = Prompt-Bool -PromptMessage "Does this SMTP Relay required TLS?"
             $DedicatedEmail = Prompt-Bool -PromptMessage "Does this SMTP Relay required user authentication?"
             If ($DedicatedEmail) {
-                $SenderEmail = Create-NewCredential
-                EmailCredential = $True
+                Create-NewCredential
+                $SenderEmail = Prompt-Input -PromptMessage "Enter the email address that will send the email" -ValidateEmail
+                $EmailCredential = $True
             } Else {
-                $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail
+                $SenderEmail = Prompt-Input -PromptMessage "Enter the email address that will send the email" -ValidateEmail
             }
         }
         "SMTPNOAUTH" {
             $SMTPMethod = $SMTPChoice
             $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod
             $SMTPTLS = $True
-            $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail
+            $SenderEmail = Prompt-Input -PromptMessage "Enter the email address that will send the email" -ValidateEmail
             $EmailCredential = $False
         }
         "SMTPGRAPH" {
             $SMTPMethod = $SMTPChoice
             $TenantID = Prompt-Input -PromptMessage "Enter the client's Tenant ID" -Required
-            $ClientID = Create-NewCredential -Graph
+            Create-NewCredential -Graph
             $SMTPTLS = $True
-            $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail
+            $SenderEmail = Prompt-Input -PromptMessage "Enter the email address that will send the email" -ValidateEmail
             $EmailCredential = $True
         }
     }
