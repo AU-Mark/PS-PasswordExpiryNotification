@@ -418,16 +418,7 @@ function Validate-Email {
         [string]$emailAddress
     )
 
-    # Define a stricter regex pattern for a valid email address
-    $emailPattern = '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-
-    # Check if the email address matches the pattern
-    if ($emailAddress -match $emailPattern) {
-        return $true
-    } else {
-        Write-Color "$prompt is not a valid email address. Please try again." -Color Red -LinesAfter 1
-        return $false
-    }
+    return (Test-EmailAddress $emailAddress).IsValid
 }
 
 function Validate-MXRecord {
@@ -448,7 +439,7 @@ param (
 
     # Validate the MX record
     Try {
-        (Resolve-DnsName -Name $SenderDomain -Type MX -Server 8.8.8.8).NameExchange | Out-Null
+        (Find-MxRecord -DomainName $SenderDomain -DNSProvider Google).MX
         Return $True
     } Catch {
         Write-Color "$SenderDomain MX record lookup did not find a DNS record. Please check the domain name you entered and try again" -Color Red -LinesAfter 1 -L -LogLvl "ERROR"
@@ -655,8 +646,7 @@ function Prompt-Bool {
 
 function Get-SMTPService {
     param(
-        [string] $SMTPMethod,
-        [string] $ClientName
+        [string] $SMTPMethod
     )
 
     Switch ($SMTPMethod) {
@@ -737,18 +727,51 @@ function Get-SMTPService {
 }
 
 Function Create-NewCredential {
-    $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail
-    $SenderPassword = Prompt-Input -PromptMessage "Enter the app password for the email account" -Password -Required
+    param(
+        [switch]$Graph
+    )
+    If ($Graph) {
+        $ClientID = Prompt-Input -PromptMessage "Enter the Client/App ID" -Required
+        $ClientSecret = Prompt-Input -PromptMessage "Enter the Client Secret" -Password -Required
 
-    # Store the credential in Credential Manager
-    New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -Password $SenderPassword -Persist LocalMachine | Out-Null
+        # Store the credential in Credential Manager
+        New-StoredCredential -Target AUPasswordExpiry -Username $ClientID -SecurePassword $ClientSecret -Persist LocalMachine | Out-Null
 
-    Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
+        Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
 
-    return $SenderEmail
+        return $ClientID
+    } Else {
+        $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail -Required
+        $SenderPassword = Prompt-Input -PromptMessage "Enter the app password for the email account" -Password -Required
+
+        # Store the credential in Credential Manager
+        New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -SecurePassword $SenderPassword -Persist LocalMachine | Out-Null
+
+        Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
+
+        return $SenderEmail
+    }
 }
 
 Function Add-ClientConfig {
+    # Initialize all variables to nulls
+    $ClientName = $Null
+    $ClientURL = $Null
+    $ClientLogo = $Null
+    $ClientDomain = $Null
+    $ClientVPN = $Null
+    $ClientAzure = $Null
+    $ClientSSPR = $Null
+    $ClientSSPRLockScreen = $Null
+    $ExpireDays = $Null
+    $SMTPMethod = $Null
+    $SMTPServer = $Null
+    $SMTPPort = $Null
+    $SMTPTLS = $Null
+    $TenantID = $Null
+    $SenderEmail = $Null
+    $EmailCredential = $Null
+
     # Prompt the user for client input
     $ClientName = Prompt-Input -PromptMessage "Enter the client's company name (This will be displayed in the email body)" -Required
     $ClientURL = Prompt-Input -PromptMessage "Enter the client's website URL" 
@@ -772,6 +795,7 @@ Function Add-ClientConfig {
         "SMTP AUTH: Office 365, Gmail, Zoho, Outlook, iCloud, Other" = "SMTPAUTH"
         "SMTP Relay: Manual Setup" = "SMTPRELAY"
         "Unauthenticated SMTP: Office 365 Direct Send, Gmail Restricted SMTP" = "SMTPNOAUTH"
+        "Microsoft 365 Graph API: Requires App Registration setup in the client's tenant" = "SMTPGRAPH"
     }
 
     # Prompt the question to the user
@@ -781,14 +805,14 @@ Function Add-ClientConfig {
     switch ($SMTPChoice) {
         "SMTPAUTH" {
             $SMTPMethod = $SMTPChoice
-            $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod -ClientName $ClientName
+            $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod
             $SMTPTLS = $True
             $SenderEmail = Create-NewCredential
             $EmailCredential = $True
         }
         "SMTPRELAY" {
             $SMTPMethod = $SMTPChoice
-            $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod -ClientName $ClientName
+            $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod
             $SMTPTLS = Prompt-Bool -PromptMessage "Does this SMTP Relay required TLS?"
             $DedicatedEmail = Prompt-Bool -PromptMessage "Does this SMTP Relay required user authentication?"
             If ($DedicatedEmail) {
@@ -799,12 +823,19 @@ Function Add-ClientConfig {
             }
         }
         "SMTPNOAUTH" {
-            $DedicatedEmail = $False
             $SMTPMethod = $SMTPChoice
-            $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod -ClientName $ClientName
+            $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod
             $SMTPTLS = $True
             $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail
             $EmailCredential = $False
+        }
+        "SMTPGRAPH" {
+            $SMTPMethod = $SMTPChoice
+            $TenantID = Prompt-Input -PromptMessage "Enter the client's Tenant ID" -Required
+            $ClientID = Create-NewCredential -Graph
+            $SMTPTLS = $True
+            $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail
+            $EmailCredential = $True
         }
     }
 
@@ -823,6 +854,7 @@ Function Add-ClientConfig {
         SMTPServer = $SMTPServer
         SMTPPort = $SMTPPort
         SMTPTLS = $SMTPTLS
+        TenantID = $TenantID
         SenderEmail = $SenderEmail
         EmailCredential = $EmailCredential
     }
@@ -838,6 +870,28 @@ Function Add-ClientConfig {
 }
 
 Function Get-ClientConfig {
+    $defaultclientConfig = @{
+        ClientName = $Null
+        ClientURL = $Null
+        ClientLogo = $Null
+        ClientDomain = $Null
+        ClientVPN = $Null
+        ClientAzure = $Null
+        ClientSSPR = $Null
+        ClientSSPRLockScreen = $Null
+        ExpireDays = $Null
+        SMTPMethod = $Null
+        SMTPServer = $Null
+        SMTPPort = $Null
+        SMTPTLS = $Null
+        TenantID = $Null
+        SenderEmail = $Null
+        EmailCredential = $Null
+    }
+
+    # Initialize $configUpdated boolean
+    $configUpdated = $False
+
     # Define the path to the JSON file
     $jsonFilePath = "$ScriptPath\clientconf.json"
 
@@ -854,21 +908,67 @@ Function Get-ClientConfig {
                 $clientConfig[$property.Name] = $property.Value
             }
 
+            # Iterate through defaultclientConfig to ensure all keys are present and if not, set to $Null for standardization
+            ForEach ($Key in $defaultclientConfig.Keys) {
+                Try {
+                    $clientConfig[$Key] | Out-Null
+                } Catch {
+                    $clientConfig[$Key] = $Null
+                    $configUpdated = $True
+                }
+            }
+
+            If ($configUpdated) {
+                # Convert the hashtable to JSON
+                $json = $clientConfig | ConvertTo-Json -Depth 3
+
+                # Save the JSON to a file
+                $json | Out-File -FilePath "$ScriptPath\clientconf.json" -Encoding utf8 -Force
+            }
+
             # Client config loaded successfully
             Write-Color "Client configuration loaded successfully."
 
             If ($clientConfig["EmailCredential"]) {
-                # Try to retrieve email credential
-                $Credential = Get-StoredCredential -Target AUPasswordExpiry
-
-                If ($Null -eq $Credential) {
-                    Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with a dedicated email account." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
-                    $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a SMTP AUTH email account credential now?"
-                    If ($NewCredential) {
-                        Create-NewCredential
-                    } Else {
-                        Write-Color "AUPasswordExpiry credential must exist to send the email notification with a dedicated email account. Run this script again to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
-                        Exit
+                If ($clientConfig["SMTPMethod" -eq "SMTPGRAPH"]) {
+                    $ClientCredential = Get-StoredCredential -Target AUPasswordExpiry
+        
+                    If ($Null -eq $ClientCredential) {
+                        Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with the Graph API." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
+                        
+                        If ($noninteractive) {
+                            Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                            Exit 1
+                        } Else {
+                            $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new Graph API credential now?"
+                            If ($NewCredential) {
+                                Create-NewCredential -Graph
+                                $Credential = Get-StoredCredential -Target AUPasswordExpiry
+                            } Else {
+                                Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                                Exit 1
+                            }
+                        }
+                    }
+                } Else {
+                    $Credential = Get-StoredCredential -Target AUPasswordExpiry
+        
+                    If ($Null -eq $Credential) {
+                        Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with a dedicated email account." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
+                        
+                        If ($noninteractive) {
+                            Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                            Exit 1
+                        } Else {
+                            $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new SMTP AUTH email account credential now?"
+                            If ($NewCredential) {
+                                Create-NewCredential
+                                $Credential = Get-StoredCredential -Target AUPasswordExpiry
+                            } Else {
+                                Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPAUTH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                                Exit 1
+                            }
+                        }
                     }
                 }
             }
@@ -892,7 +992,7 @@ Function Get-ClientConfig {
         $noninteractive = ([Environment]::GetCommandLineArgs() -contains '-NonInteractive')
 
         If ($noninteractive) {
-            Write-Color "Cannot create client config json file while running in a non-interactive session. Please launch $PSScriptRoot\PasswordExpiryEmail.ps1 in an interactive powershell session to create a new client configuration" -Color Red -L -LogLvl "ERROR" -NoConsoleOutput
+            Write-Color "Cannot create client config json file while running in a non-interactive session. Please launch $ScriptPath\PasswordExpiryEmail.ps1 in an interactive powershell session to create a new client configuration" -Color Red -L -LogLvl "ERROR" -NoConsoleOutput
             Exit
         } Else {
             # No client config was found, create a new one
@@ -934,7 +1034,10 @@ param (
 ################################################################################################################################
 #                                                             Globals                                                          #
 ################################################################################################################################
+# Debug mode will log users whos password are not expiring
 $Debug = $False
+
+# This is a special character used with write-color and read-host lines
 $zeroWidthSpace = [char]0x200B
 
 ################################################################################################################################
@@ -1331,16 +1434,7 @@ function Validate-Email {
         [string]$emailAddress
     )
 
-    # Define a stricter regex pattern for a valid email address
-    $emailPattern = '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-
-    # Check if the email address matches the pattern
-    if ($emailAddress -match $emailPattern) {
-        return $true
-    } else {
-        Write-Color "$prompt is not a valid email address. Please try again." -Color Red -LinesAfter 1
-        return $false
-    }
+    return (Test-EmailAddress $emailAddress).IsValid
 }
 
 function Validate-MXRecord {
@@ -1361,7 +1455,7 @@ param (
 
     # Validate the MX record
     Try {
-        (Resolve-DnsName -Name $SenderDomain -Type MX -Server 8.8.8.8).NameExchange | Out-Null
+        (Find-MxRecord -DomainName $SenderDomain -DNSProvider Google).MX
         Return $True
     } Catch {
         Write-Color "$SenderDomain MX record lookup did not find a DNS record. Please check the domain name you entered and try again" -Color Red -LinesAfter 1 -L -LogLvl "ERROR"
@@ -1568,8 +1662,7 @@ function Prompt-Bool {
 
 function Get-SMTPService {
     param(
-        [string] $SMTPMethod,
-        [string] $ClientName
+        [string] $SMTPMethod
     )
 
     Switch ($SMTPMethod) {
@@ -1650,18 +1743,51 @@ function Get-SMTPService {
 }
 
 Function Create-NewCredential {
-    $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail
-    $SenderPassword = Prompt-Input -PromptMessage "Enter the app password for the email account" -Password -Required
+    param(
+        [switch]$Graph
+    )
+    If ($Graph) {
+        $ClientID = Prompt-Input -PromptMessage "Enter the Client/App ID" -Required
+        $ClientSecret = Prompt-Input -PromptMessage "Enter the Client Secret" -Password -Required
 
-    # Store the credential in Credential Manager
-    New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -Password $SenderPassword -Persist LocalMachine | Out-Null
+        # Store the credential in Credential Manager
+        New-StoredCredential -Target AUPasswordExpiry -Username $ClientID -SecurePassword $ClientSecret -Persist LocalMachine | Out-Null
 
-    Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
+        Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
 
-    return $SenderEmail
+        return $ClientID
+    } Else {
+        $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail -Required
+        $SenderPassword = Prompt-Input -PromptMessage "Enter the app password for the email account" -Password -Required
+
+        # Store the credential in Credential Manager
+        New-StoredCredential -Target AUPasswordExpiry -Username $SenderEmail -SecurePassword $SenderPassword -Persist LocalMachine | Out-Null
+
+        Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
+
+        return $SenderEmail
+    }
 }
 
 Function Add-ClientConfig {
+    # Initialize all variables to nulls
+    $ClientName = $Null
+    $ClientURL = $Null
+    $ClientLogo = $Null
+    $ClientDomain = $Null
+    $ClientVPN = $Null
+    $ClientAzure = $Null
+    $ClientSSPR = $Null
+    $ClientSSPRLockScreen = $Null
+    $ExpireDays = $Null
+    $SMTPMethod = $Null
+    $SMTPServer = $Null
+    $SMTPPort = $Null
+    $SMTPTLS = $Null
+    $TenantID = $Null
+    $SenderEmail = $Null
+    $EmailCredential = $Null
+
     # Prompt the user for client input
     $ClientName = Prompt-Input -PromptMessage "Enter the client's company name (This will be displayed in the email body)" -Required
     $ClientURL = Prompt-Input -PromptMessage "Enter the client's website URL" 
@@ -1685,6 +1811,7 @@ Function Add-ClientConfig {
         "SMTP AUTH: Office 365, Gmail, Zoho, Outlook, iCloud, Other" = "SMTPAUTH"
         "SMTP Relay: Manual Setup" = "SMTPRELAY"
         "Unauthenticated SMTP: Office 365 Direct Send, Gmail Restricted SMTP" = "SMTPNOAUTH"
+        "Microsoft 365 Graph API: Requires App Registration setup in the client's tenant" = "SMTPGRAPH"
     }
 
     # Prompt the question to the user
@@ -1694,14 +1821,14 @@ Function Add-ClientConfig {
     switch ($SMTPChoice) {
         "SMTPAUTH" {
             $SMTPMethod = $SMTPChoice
-            $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod -ClientName $ClientName
+            $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod
             $SMTPTLS = $True
             $SenderEmail = Create-NewCredential
             $EmailCredential = $True
         }
         "SMTPRELAY" {
             $SMTPMethod = $SMTPChoice
-            $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod -ClientName $ClientName
+            $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod
             $SMTPTLS = Prompt-Bool -PromptMessage "Does this SMTP Relay required TLS?"
             $DedicatedEmail = Prompt-Bool -PromptMessage "Does this SMTP Relay required user authentication?"
             If ($DedicatedEmail) {
@@ -1712,12 +1839,19 @@ Function Add-ClientConfig {
             }
         }
         "SMTPNOAUTH" {
-            $DedicatedEmail = $False
             $SMTPMethod = $SMTPChoice
-            $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod -ClientName $ClientName
+            $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod
             $SMTPTLS = $True
             $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail
             $EmailCredential = $False
+        }
+        "SMTPGRAPH" {
+            $SMTPMethod = $SMTPChoice
+            $TenantID = Prompt-Input -PromptMessage "Enter the client's Tenant ID" -Required
+            $ClientID = Create-NewCredential -Graph
+            $SMTPTLS = $True
+            $SenderEmail = Prompt-Input -PromptMessage "Enter the email address for the account that will send the email" -ValidateEmail
+            $EmailCredential = $True
         }
     }
 
@@ -1736,6 +1870,7 @@ Function Add-ClientConfig {
         SMTPServer = $SMTPServer
         SMTPPort = $SMTPPort
         SMTPTLS = $SMTPTLS
+        TenantID = $TenantID
         SenderEmail = $SenderEmail
         EmailCredential = $EmailCredential
     }
@@ -1751,6 +1886,28 @@ Function Add-ClientConfig {
 }
 
 Function Get-ClientConfig {
+    $defaultclientConfig = @{
+        ClientName = $Null
+        ClientURL = $Null
+        ClientLogo = $Null
+        ClientDomain = $Null
+        ClientVPN = $Null
+        ClientAzure = $Null
+        ClientSSPR = $Null
+        ClientSSPRLockScreen = $Null
+        ExpireDays = $Null
+        SMTPMethod = $Null
+        SMTPServer = $Null
+        SMTPPort = $Null
+        SMTPTLS = $Null
+        TenantID = $Null
+        SenderEmail = $Null
+        EmailCredential = $Null
+    }
+
+    # Initialize $configUpdated boolean
+    $configUpdated = $False
+
     # Define the path to the JSON file
     $jsonFilePath = "$PSScriptRoot\clientconf.json"
 
@@ -1767,21 +1924,67 @@ Function Get-ClientConfig {
                 $clientConfig[$property.Name] = $property.Value
             }
 
+            # Iterate through defaultclientConfig to ensure all keys are present and if not, set to $Null for standardization
+            ForEach ($Key in $defaultclientConfig.Keys) {
+                Try {
+                    $clientConfig[$Key] | Out-Null
+                } Catch {
+                    $clientConfig[$Key] = $Null
+                    $configUpdated = $True
+                }
+            }
+
+            If ($configUpdated) {
+                # Convert the hashtable to JSON
+                $json = $clientConfig | ConvertTo-Json -Depth 3
+
+                # Save the JSON to a file
+                $json | Out-File -FilePath "$ScriptPath\clientconf.json" -Encoding utf8 -Force
+            }
+
             # Client config loaded successfully
             Write-Color "Client configuration loaded successfully."
 
             If ($clientConfig["EmailCredential"]) {
-                # Try to retrieve email credential
-                $Credential = Get-StoredCredential -Target AUPasswordExpiry
-
-                If ($Null -eq $Credential) {
-                    Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with a dedicated email account." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
-                    $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a SMTP AUTH email account credential now?"
-                    If ($NewCredential) {
-                        Create-NewCredential
-                    } Else {
-                        Write-Color "AUPasswordExpiry credential must exist to send the email notification with a dedicated email account. Run this script again to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
-                        Exit
+                If ($clientConfig["SMTPMethod" -eq "SMTPGRAPH"]) {
+                    $ClientCredential = Get-StoredCredential -Target AUPasswordExpiry
+        
+                    If ($Null -eq $ClientCredential) {
+                        Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with the Graph API." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
+                        
+                        If ($noninteractive) {
+                            Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                            Exit 1
+                        } Else {
+                            $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new Graph API credential now?"
+                            If ($NewCredential) {
+                                Create-NewCredential -Graph
+                                $Credential = Get-StoredCredential -Target AUPasswordExpiry
+                            } Else {
+                                Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                                Exit 1
+                            }
+                        }
+                    }
+                } Else {
+                    $Credential = Get-StoredCredential -Target AUPasswordExpiry
+        
+                    If ($Null -eq $Credential) {
+                        Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with a dedicated email account." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
+                        
+                        If ($noninteractive) {
+                            Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                            Exit 1
+                        } Else {
+                            $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new SMTP AUTH email account credential now?"
+                            If ($NewCredential) {
+                                Create-NewCredential
+                                $Credential = Get-StoredCredential -Target AUPasswordExpiry
+                            } Else {
+                                Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPAUTH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                                Exit 1
+                            }
+                        }
                     }
                 }
             }
@@ -1846,7 +2049,6 @@ function Convert-HTMLToPlainText {
     return $plainText
 }
 
-
 Function Send-PasswordExpiry {
     param(
 		[Parameter(Mandatory = $True)] [hashtable]$clientConfig,
@@ -1854,23 +2056,53 @@ Function Send-PasswordExpiry {
         [Parameter(Mandatory = $True)] [string]$EmailSubject,
         [Parameter(Mandatory = $True)] [string]$EmailBody
 	)
-
-    Import-Module -Name "Send-MailKitMessage"
     
-    #use secure connection if available ([bool], optional)
-    $UseSecureConnectionIfAvailable = $clientConfig["SMTPTLS"]
+    # Are we in a noninteractive session?
+    $noninteractive = ([Environment]::GetCommandLineArgs() -contains '-NonInteractive')
 
     If ($clientConfig["EmailCredential"]) {
-        $Credential = Get-StoredCredential -Target AUPasswordExpiry
+        If ($clientConfig["SMTPMethod" -eq "SMTPGRAPH"]) {
+            $ClientCredential = Get-StoredCredential -Target AUPasswordExpiry
 
-        If ($Null -eq $Credential) {
-            Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with a dedicated email account." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
-            $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new SMTP AUTH email account credential now?"
-            If ($NewCredential) {
-                Create-NewCredential
-            } Else {
-                Write-Color "AUPasswordExpiry credential must exist to send the email notification with a dedicated email account. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
-                Exit
+            If ($Null -eq $ClientCredential) {
+                Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with the Graph API." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
+                
+                If ($noninteractive) {
+                    Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                    Exit 1
+                } Else {
+                    $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new Graph API credential now?"
+                    If ($NewCredential) {
+                        Create-NewCredential -Graph
+                        $ClientCredential = Get-StoredCredential -Target AUPasswordExpiry
+                    } Else {
+                        Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                        Exit 1
+                    }
+                }
+            }
+
+            $ClientSecret = $ClientCredential.GetNetworkCredential().Password
+            $Credential = ConvertTo-GraphCredential -ClientID $ClientCredential.UserName -ClientSecret $ClientSecret -DirectoryID $clientConfig["TenantID"]
+        } Else {
+            $Credential = Get-StoredCredential -Target AUPasswordExpiry
+
+            If ($Null -eq $Credential) {
+                Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with a dedicated email account." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
+                
+                If ($noninteractive) {
+                    Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                    Exit 1
+                } Else {
+                    $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new SMTP AUTH email account credential now?"
+                    If ($NewCredential) {
+                        Create-NewCredential
+                        $Credential = Get-StoredCredential -Target AUPasswordExpiry
+                    } Else {
+                        Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPAUTH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                        Exit 1
+                    }
+                }
             }
         }
     }
@@ -1881,12 +2113,11 @@ Function Send-PasswordExpiry {
     #port ([int], required)
     $Port = $clientConfig["SMTPPort"]
 
-    #sender ([MimeKit.MailboxAddress] http://www.mimekit.net/docs/html/T_MimeKit_MailboxAddress.htm, required)
-    $From = [MimeKit.MailboxAddress]$clientConfig["SenderEmail"]
+    #sender ([string], required)
+    $From = $clientConfig["SenderEmail"]
 
     #recipient list ([MimeKit.InternetAddressList] http://www.mimekit.net/docs/html/T_MimeKit_InternetAddressList.htm, required)
-    $RecipientList = [MimeKit.InternetAddressList]::new()
-    $RecipientList.Add([MimeKit.InternetAddress]$EmailRecipient)
+    $RecipientList = @($EmailRecipient)
 
     #cc list ([MimeKit.InternetAddressList] http://www.mimekit.net/docs/html/T_MimeKit_InternetAddressList.htm, optional)
     #$CCList = [MimeKit.InternetAddressList]::new()
@@ -1912,43 +2143,57 @@ Function Send-PasswordExpiry {
     }
 
     If ($clientConfig["EmailCredential"]) {
-        #define Send-MailKitMessage parameters
-        $Parameters = @{
-            "UseSecureConnectionIfAvailable" = $UseSecureConnectionIfAvailable    
-            "Credential" = $Credential
-            "SMTPServer" = $SMTPServer
-            "Port" = $Port
-            "From" = $From
-            "RecipientList" = $RecipientList
-            "Subject" = $Subject
-            "TextBody" = $TextBody
-            "HTMLBody" = $HTMLBody
-            "AttachmentList" = $AttachmentList
-        };
+        If ($clientConfig["SMTPMethod" -eq "SMTPGRAPH"]) {
+            $Parameters = @{  
+                "Credential" = $Credential
+                "From" = $From
+                "To" = $RecipientList
+                "Subject" = $Subject
+                "Text" = $TextBody
+                "HTML" = $HTMLBody
+                "Attachment" = $AttachmentList
+                "Priority" = "High"
+                "Graph" = $True
+            }
+        } Else {
+            #define Send-MailKitMessage parameters
+            $Parameters = @{
+                "Credential" = $Credential
+                "Server" = $SMTPServer
+                "Port" = $Port
+                "From" = $From
+                "To" = $RecipientList
+                "Subject" = $Subject
+                "Text" = $TextBody
+                "HTML" = $HTMLBody
+                "Attachment" = $AttachmentList
+                "Priority" = "High"
+            }
+        }
     } Else {
         $Parameters = @{
-            "UseSecureConnectionIfAvailable" = $UseSecureConnectionIfAvailable    
-            "SMTPServer" = $SMTPServer
+            "Server" = $SMTPServer
             "Port" = $Port
             "From" = $From
-            "RecipientList" = $RecipientList
+            "To" = $RecipientList
             "Subject" = $Subject
-            "TextBody" = $TextBody
-            "HTMLBody" = $HTMLBody
-            "AttachmentList" = $AttachmentList
+            "Text" = $TextBody
+            "HTML" = $HTMLBody
+            "Attachment" = $AttachmentList
+            "Priority" = "High"
         };
     }
 
     #send message
     Try {
-        Send-MailKitMessage @Parameters;
+        Send-EmailMessage @Parameters
     } Catch {
         Write-Color -Text "Err Line: ","$($_.InvocationInfo.ScriptLineNumber)","Err Name: ","$($_.Exception.GetType().FullName) ","Err Msg: ","$($_.Exception.Message)" -Color Red,Magenta,Red,Magenta,Red,Magenta -L -LogLvl "ERROR"
     }
 }
 
-# Function to check if a program is installed in both x86 and x64 registry paths
 Function Check-ProgramInstalled {
+    # Function to check if a program is installed in both x86 and x64 registry paths
     param (
         [string]$ProgramName
     )
@@ -1961,8 +2206,9 @@ Function Check-ProgramInstalled {
     return ($installedX86 -ne $null -or $installedX64 -ne $null)
 }
 
-# Function to check if the current user has "Log on as a batch job" rights
 function Check-LogonAsBatchJobRights {
+    # Function to check if the current user has "Log on as a batch job" rights# Function to check if the current user has "Allow log on as a batch job" rights
+
     # Export the local security policy
     secedit /export /cfg "$env:TEMP\secpol.cfg" | Out-Null
 
@@ -1987,13 +2233,13 @@ Try {
         Exit
     } 
 
-    If ((Check-ModuleStatus -Name "Send-MailKitMessage" -Silent $True) -eq $False) {
-        Write-Color "Send-MailKitMessage module was not found. Please install this module for this script to run properly. Exiting script..." -Color Red -L -LinesBefore 1
-        Exit
-    } 
-
     If ((Check-ModuleStatus -Name "ActiveDirectory" -Silent $True) -eq $False) {
         Write-Color "ActiveDirectory module was not found. Please install this module for this script to run properly. Exiting script..." -Color Red -L -LinesBefore 1
+        Exit
+    }
+
+    If ((Check-ModuleStatus -Name "Mailozaurr" -Silent $True) -eq $False) {
+        Write-Color "Mailozaurr module was not found. Please install this module for this script to run properly. Exiting script..." -Color Red -L -LinesBefore 1
         Exit
     }
 
@@ -2002,100 +2248,95 @@ Try {
         Exit 1
     }
 
-    # Get Users From AD who are Enabled, Passwords Expire and are Not Currently Expired
-    If (Check-ModuleStatus -Name "ActiveDirectory") {
+    Write-Color "Checking for client config..." -Color White -L -LinesBefore 1
+    $clientConfig = Get-ClientConfig
 
-        Write-Color "Checking for client config..." -Color White -L -LinesBefore 1
-        $clientConfig = Get-ClientConfig
+    $Users = Get-ADUser -Filter * -Properties Name, PasswordNeverExpires, PasswordExpired, PasswordLastSet, EmailAddress, sAMAccountName | Where-Object {$_.Enabled -eq "True"} | Where-Object { $_.PasswordNeverExpires -eq $false } | Where-Object { $_.passwordexpired -eq $false }
+    $DomainMaxPasswordAge = (Get-ADDefaultDomainPasswordPolicy).MaxPasswordAge
 
-        $Users = Get-ADUser -Filter * -Properties Name, PasswordNeverExpires, PasswordExpired, PasswordLastSet, EmailAddress, sAMAccountName | Where-Object {$_.Enabled -eq "True"} | Where-Object { $_.PasswordNeverExpires -eq $false } | Where-Object { $_.passwordexpired -eq $false }
-        $DomainMaxPasswordAge = (Get-ADDefaultDomainPasswordPolicy).MaxPasswordAge
+    # Process Each User for Password Expiry
+    ForEach ($User in $Users) {
+        # Get the users name and correct the last, first naming convention from Trillum's AD
+        $LastName = $User.Surname
+        $FirstName = $User.GivenName
+        $FullName = "$FirstName $LastName"
 
-        # Process Each User for Password Expiry
-        ForEach ($User in $Users) {
-            # Get the users name and correct the last, first naming convention from Trillum's AD
-            $LastName = $User.Surname
-            $FirstName = $User.GivenName
-            $FullName = "$FirstName $LastName"
+        $UserEmail = $User.EmailAddress
+        $UserPasswordLastSet = $User.PasswordLastSet
+        $PasswordPolicy = (Get-ADUserResultantPasswordPolicy $User)
+        $Username = $User.sAMAccountName
 
-            $UserEmail = $User.EmailAddress
-            $UserPasswordLastSet = $User.PasswordLastSet
-            $PasswordPolicy = (Get-ADUserResultantPasswordPolicy $User)
-            $Username = $User.sAMAccountName
+        # Check for User Password Policy
+        If ($null -ne $PasswordPolicy){
+            $MaxPasswordAge = ($PasswordPolicy).MaxPasswordAge
+        } Else {
+            # No User Password Policy, set to Domain Default
+            $MaxPasswordAge = $DomainMaxPasswordAge
+        }
 
-            # Check for User Password Policy
-            If ($null -ne $PasswordPolicy){
-                $MaxPasswordAge = ($PasswordPolicy).MaxPasswordAge
-            } Else {
-                # No User Password Policy, set to Domain Default
-                $MaxPasswordAge = $DomainMaxPasswordAge
+        # Calculate the expiration date based on when the user last reset their password and the max password age before expiration
+        $ExpiresOn = $UserPasswordLastSet + $MaxPasswordAge
+        $Today = (Get-Date)
+        $DaysToExpire = (New-TimeSpan -Start $Today -End $ExpiresOn).Days
+
+        If ($DaysToExpire -gt 1) {
+            $ExpiryMsg = "in $daystoexpire days"
+            $EmailSubject="Your $($clientConfig["ClientName"]) password will expire in $ExpiryMsg."
+        } Else {
+            $ExpiryMsg = "today"
+            $EmailSubject="Your $($clientConfig["ClientName"]) password will expire $ExpiryMsg."
+        }
+
+        # If a user has no email address listed
+        If ($null -eq $UserEmail) {
+            Write-Color "No email address was found for $Username" -Color Yellow -L -LogLvl 'WARNING'
+            Continue 
+        }
+
+        # If Test switch, output HTML from first user run and then exit script
+        if ($Test) {
+            # Dot source the PowerShell HTML file
+            . ("$PSScriptRoot\PasswordExpiryHTML.ps1")
+
+            # Create temp HTML file
+            $tempFilePath = [System.IO.Path]::GetTempFileName()
+            $tempFilePath = "$tempFilePath.html"
+            # Dump the EmailBody into the html temp file
+            Set-Content -Path $tempFilePath -Value $EmailBody
+
+            # Open the HTML file with Chrome or Edge browser for viewing
+            $edgeInstalled = Check-ProgramInstalled -ProgramName "Microsoft Edge"
+            $chromeInstalled = Check-ProgramInstalled -ProgramName "Google Chrome"
+            if ($edgeInstalled) {
+                Start-Process "msedge.exe" -ArgumentList $tempFilePath
+            } elseif ($chromeInstalled) {
+                Start-Process "chrome.exe" -ArgumentList $tempFilePath
             }
 
-            # Calculate the expiration date based on when the user last reset their password and the max password age before expiration
-            $ExpiresOn = $UserPasswordLastSet + $MaxPasswordAge
-            $Today = (Get-Date)
-            $DaysToExpire = (New-TimeSpan -Start $Today -End $ExpiresOn).Days
-
-            If ($DaysToExpire -gt 1) {
-                $ExpiryMsg = "in $daystoexpire days"
-                $EmailSubject="Your $($clientConfig["ClientName"]) password will expire in $ExpiryMsg."
-            } Else {
-                $ExpiryMsg = "today"
-                $EmailSubject="Your $($clientConfig["ClientName"]) password will expire $ExpiryMsg."
-            }
-
-            # If a user has no email address listed
-            If ($null -eq $UserEmail) {
-                Write-Color "No email address was found for $Username" -Color Yellow -L -LogLvl 'WARNING'
-                Continue 
-            }
-
-            # If Test switch, output HTML from first user run and then exit script
-            if ($Test) {
-                # Dot source the PowerShell HTML file
-                . ("$PSScriptRoot\PasswordExpiryHTML.ps1")
-
-                # Create temp HTML file
-                $tempFilePath = [System.IO.Path]::GetTempFileName()
-                $tempFilePath = "$tempFilePath.html"
-                # Dump the EmailBody into the html temp file
-                Set-Content -Path $tempFilePath -Value $EmailBody
-
-                # Open the HTML file with Chrome or Edge browser for viewing
-                $edgeInstalled = Check-ProgramInstalled -ProgramName "Microsoft Edge"
-                $chromeInstalled = Check-ProgramInstalled -ProgramName "Google Chrome"
-                if ($edgeInstalled) {
-                    Start-Process "msedge.exe" -ArgumentList $tempFilePath
-                } elseif ($chromeInstalled) {
-                    Start-Process "chrome.exe" -ArgumentList $tempFilePath
-                }
-
-                Exit 0
-            } 
-
-            # Send Email Message
-            If (($DaysToExpire -ge 0) -and ($DaysToExpire -le $clientConfig["ExpireDays"])) {
-                # Dot source the PowerShell HTML file
-                . ("$PSScriptRoot\PasswordExpiryHTML.ps1")
-
-                # Send the email
-                Send-PasswordExpiry -clientConfig $clientConfig -EmailRecipient $UserEmail -EmailSubject $EmailSubject -EmailBody $EmailBody
-
-                Write-Color "Password for $FullName will expire $ExpiryMsg. Notification email sent to user at $UserEmail" -L -NoConsoleOutput
-            } Else {
-                # Log Non Expiring Password
-                If ($Debug -eq $True) {
-                    #Write-Host "No password expiration was found for $Username"
-					Write-Color "No password expiration was found for $Username" -Color White -L -LogLvl 'DEBUG'
-				}
-                Continue
-            }
+            Exit 0
         } 
-    } Else {
-        Write-Color "The Active Directory PowerShell module could not be loaded. Exiting..." -Color Red -L -LogLvl "ERROR"
-    }
+
+        # Send Email Message
+        If (($DaysToExpire -ge 0) -and ($DaysToExpire -le $clientConfig["ExpireDays"])) {
+            # Dot source the PowerShell HTML file
+            . ("$PSScriptRoot\PasswordExpiryHTML.ps1")
+
+            # Send the email
+            Send-PasswordExpiry -clientConfig $clientConfig -EmailRecipient $UserEmail -EmailSubject $EmailSubject -EmailBody $EmailBody
+            
+            Write-Color "Password for $FullName will expire $ExpiryMsg. Notification email sent to user at $UserEmail" -L -NoConsoleOutput
+        } Else {
+            # Log Non Expiring Password
+            If ($Debug -eq $True) {
+                #Write-Host "No password expiration was found for $Username"
+                Write-Color "No password expiration was found for $Username. There password will expire $ExpiryMsg" -Color White -L -LogLvl 'DEBUG'
+            }
+            Continue
+        }
+    } 
 } Catch {
     Write-Color -Text "Err Line: ","$($_.InvocationInfo.ScriptLineNumber)","Err Name: ","$($_.Exception.GetType().FullName) ","Err Msg: ","$($_.Exception.Message)" -Color Red,Magenta,Red,Magenta,Red,Magenta -L -LogLvl "ERROR"
+    Exit 1
 }
 
 '@
@@ -2273,8 +2514,9 @@ $EmailBody = $EmailBody + $HTMLEnd
     $PasswordExpiryHTML | Out-File "$ScriptPath\PasswordExpiryHTML.ps1" -Force
 }
 
-# Function to check if the current user has "Log on as a batch job" rights# Function to check if the current user has "Allow log on as a batch job" rights
 function Check-LogonAsBatchJobRights {
+    # Function to check if the current user has "Log on as a batch job" rights# Function to check if the current user has "Allow log on as a batch job" rights
+
     # Export the local security policy
     secedit /export /cfg "$env:TEMP\secpol.cfg" | Out-Null
 
