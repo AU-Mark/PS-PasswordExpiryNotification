@@ -730,6 +730,7 @@ Function Create-NewCredential {
     param(
         [switch]$Graph
     )
+    
     If ($Graph) {
         $ClientID = Prompt-Input -PromptMessage "Enter the Client/App ID" -Required
         $ClientSecret = Prompt-Input -PromptMessage "Enter the Client Secret" -Password -Required
@@ -749,6 +750,62 @@ Function Create-NewCredential {
 
         Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
     }
+}
+
+Function Get-ClientCredential {
+    param(
+        [string]$SMTPMethod
+    )
+
+    # Are we in a noninteractive session?
+    $noninteractive = ([Environment]::GetCommandLineArgs() -contains '-NonInteractive')
+
+    If ($SMTPMethod -eq "SMTPGRAPH") {
+        $ClientCredential = Get-StoredCredential -Target AUPasswordExpiry
+
+        If ($Null -eq $ClientCredential) {
+            Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with the Graph API." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
+            
+            If ($noninteractive) {
+                Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                Exit 1
+            } Else {
+                $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new Graph API credential now?"
+                If ($NewCredential) {
+                    Create-NewCredential -Graph
+                    $ClientCredential = Get-StoredCredential -Target AUPasswordExpiry
+                } Else {
+                    Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                    Exit 1
+                }
+            }
+        }
+
+        $ClientSecret = $ClientCredential.GetNetworkCredential().Password
+        $Credential = ConvertTo-GraphCredential -ClientID $ClientCredential.UserName -ClientSecret $ClientSecret -DirectoryID $clientConfig["TenantID"]
+    } Else {
+        $Credential = Get-StoredCredential -Target AUPasswordExpiry
+
+        If ($Null -eq $Credential) {
+            Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with a dedicated email account." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
+            
+            If ($noninteractive) {
+                Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                Exit 1
+            } Else {
+                $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new SMTP AUTH email account credential now?"
+                If ($NewCredential) {
+                    Create-NewCredential
+                    $Credential = Get-StoredCredential -Target AUPasswordExpiry
+                } Else {
+                    Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPAUTH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                    Exit 1
+                }
+            }
+        }
+    }
+
+    Return $Credential
 }
 
 Function Add-ClientConfig {
@@ -804,7 +861,7 @@ Function Add-ClientConfig {
         "SMTPAUTH" {
             $SMTPMethod = $SMTPChoice
             $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod
-            $SMTPTLS = $True
+            $SMTPTLS = "Auto"
             Create-NewCredential
             $SenderEmail = Prompt-Input -PromptMessage "Enter the email address that will send the email" -ValidateEmail
             $EmailCredential = $True
@@ -812,7 +869,12 @@ Function Add-ClientConfig {
         "SMTPRELAY" {
             $SMTPMethod = $SMTPChoice
             $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod
-            $SMTPTLS = Prompt-Bool -PromptMessage "Does this SMTP Relay required TLS?"
+            $TLS = Prompt-Bool -PromptMessage "Does this SMTP Relay require TLS?"
+            If ($TLS) {
+                $SMTPTLS = "Auto"
+            } Else {
+                $SMTPTLS = "None"
+            }
             $DedicatedEmail = Prompt-Bool -PromptMessage "Does this SMTP Relay required user authentication?"
             If ($DedicatedEmail) {
                 Create-NewCredential
@@ -825,7 +887,7 @@ Function Add-ClientConfig {
         "SMTPNOAUTH" {
             $SMTPMethod = $SMTPChoice
             $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod
-            $SMTPTLS = $True
+            $SMTPTLS = "Auto"
             $SenderEmail = Prompt-Input -PromptMessage "Enter the email address that will send the email" -ValidateEmail
             $EmailCredential = $False
         }
@@ -833,7 +895,7 @@ Function Add-ClientConfig {
             $SMTPMethod = $SMTPChoice
             $TenantID = Prompt-Input -PromptMessage "Enter the client's Tenant ID" -Required
             Create-NewCredential -Graph
-            $SMTPTLS = $True
+            $SMTPTLS = "Auto"
             $SenderEmail = Prompt-Input -PromptMessage "Enter the email address that will send the email" -ValidateEmail
             $EmailCredential = $True
         }
@@ -930,47 +992,7 @@ Function Get-ClientConfig {
             Write-Color "Client configuration loaded successfully."
 
             If ($clientConfig["EmailCredential"]) {
-                If ($clientConfig["SMTPMethod" -eq "SMTPGRAPH"]) {
-                    $ClientCredential = Get-StoredCredential -Target AUPasswordExpiry
-        
-                    If ($Null -eq $ClientCredential) {
-                        Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with the Graph API." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
-                        
-                        If ($noninteractive) {
-                            Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
-                            Exit 1
-                        } Else {
-                            $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new Graph API credential now?"
-                            If ($NewCredential) {
-                                Create-NewCredential -Graph
-                                $Credential = Get-StoredCredential -Target AUPasswordExpiry
-                            } Else {
-                                Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
-                                Exit 1
-                            }
-                        }
-                    }
-                } Else {
-                    $Credential = Get-StoredCredential -Target AUPasswordExpiry
-        
-                    If ($Null -eq $Credential) {
-                        Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with a dedicated email account." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
-                        
-                        If ($noninteractive) {
-                            Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
-                            Exit 1
-                        } Else {
-                            $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new SMTP AUTH email account credential now?"
-                            If ($NewCredential) {
-                                Create-NewCredential
-                                $Credential = Get-StoredCredential -Target AUPasswordExpiry
-                            } Else {
-                                Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPAUTH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
-                                Exit 1
-                            }
-                        }
-                    }
-                }
+                Get-ClientCredential -SMTPMethod $clientConfig["SMTPMethod"]
             }
 
             # Return the hashtable content
@@ -1746,6 +1768,7 @@ Function Create-NewCredential {
     param(
         [switch]$Graph
     )
+    
     If ($Graph) {
         $ClientID = Prompt-Input -PromptMessage "Enter the Client/App ID" -Required
         $ClientSecret = Prompt-Input -PromptMessage "Enter the Client Secret" -Password -Required
@@ -1765,6 +1788,62 @@ Function Create-NewCredential {
 
         Write-Color "The AUPasswordExpiry credential was saved in Credential Manager under account $(whoami.exe)" -Color Green -L -LinesBefore 1
     }
+}
+
+Function Get-ClientCredential {
+    param(
+        [string]$SMTPMethod
+    )
+
+    # Are we in a noninteractive session?
+    $noninteractive = ([Environment]::GetCommandLineArgs() -contains '-NonInteractive')
+
+    If ($SMTPMethod -eq "SMTPGRAPH") {
+        $ClientCredential = Get-StoredCredential -Target AUPasswordExpiry
+
+        If ($Null -eq $ClientCredential) {
+            Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with the Graph API." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
+            
+            If ($noninteractive) {
+                Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                Exit 1
+            } Else {
+                $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new Graph API credential now?"
+                If ($NewCredential) {
+                    Create-NewCredential -Graph
+                    $ClientCredential = Get-StoredCredential -Target AUPasswordExpiry
+                } Else {
+                    Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                    Exit 1
+                }
+            }
+        }
+
+        $ClientSecret = $ClientCredential.GetNetworkCredential().Password
+        $Credential = ConvertTo-GraphCredential -ClientID $ClientCredential.UserName -ClientSecret $ClientSecret -DirectoryID $clientConfig["TenantID"]
+    } Else {
+        $Credential = Get-StoredCredential -Target AUPasswordExpiry
+
+        If ($Null -eq $Credential) {
+            Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with a dedicated email account." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
+            
+            If ($noninteractive) {
+                Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                Exit 1
+            } Else {
+                $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new SMTP AUTH email account credential now?"
+                If ($NewCredential) {
+                    Create-NewCredential
+                    $Credential = Get-StoredCredential -Target AUPasswordExpiry
+                } Else {
+                    Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPAUTH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
+                    Exit 1
+                }
+            }
+        }
+    }
+
+    Return $Credential
 }
 
 Function Add-ClientConfig {
@@ -1820,7 +1899,7 @@ Function Add-ClientConfig {
         "SMTPAUTH" {
             $SMTPMethod = $SMTPChoice
             $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod
-            $SMTPTLS = $True
+            $SMTPTLS = "Auto"
             Create-NewCredential
             $SenderEmail = Prompt-Input -PromptMessage "Enter the email address that will send the email" -ValidateEmail
             $EmailCredential = $True
@@ -1828,7 +1907,12 @@ Function Add-ClientConfig {
         "SMTPRELAY" {
             $SMTPMethod = $SMTPChoice
             $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod
-            $SMTPTLS = Prompt-Bool -PromptMessage "Does this SMTP Relay required TLS?"
+            $TLS = Prompt-Bool -PromptMessage "Does this SMTP Relay require TLS?"
+            If ($TLS) {
+                $SMTPTLS = "Auto"
+            } Else {
+                $SMTPTLS = "None"
+            }
             $DedicatedEmail = Prompt-Bool -PromptMessage "Does this SMTP Relay required user authentication?"
             If ($DedicatedEmail) {
                 Create-NewCredential
@@ -1841,7 +1925,7 @@ Function Add-ClientConfig {
         "SMTPNOAUTH" {
             $SMTPMethod = $SMTPChoice
             $SMTPServer, $SMTPPort = Get-SMTPService -SMTPMethod $SMTPMethod
-            $SMTPTLS = $True
+            $SMTPTLS = "Auto"
             $SenderEmail = Prompt-Input -PromptMessage "Enter the email address that will send the email" -ValidateEmail
             $EmailCredential = $False
         }
@@ -1849,7 +1933,7 @@ Function Add-ClientConfig {
             $SMTPMethod = $SMTPChoice
             $TenantID = Prompt-Input -PromptMessage "Enter the client's Tenant ID" -Required
             Create-NewCredential -Graph
-            $SMTPTLS = $True
+            $SMTPTLS = "Auto"
             $SenderEmail = Prompt-Input -PromptMessage "Enter the email address that will send the email" -ValidateEmail
             $EmailCredential = $True
         }
@@ -1946,47 +2030,7 @@ Function Get-ClientConfig {
             Write-Color "Client configuration loaded successfully."
 
             If ($clientConfig["EmailCredential"]) {
-                If ($clientConfig["SMTPMethod" -eq "SMTPGRAPH"]) {
-                    $ClientCredential = Get-StoredCredential -Target AUPasswordExpiry
-        
-                    If ($Null -eq $ClientCredential) {
-                        Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with the Graph API." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
-                        
-                        If ($noninteractive) {
-                            Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
-                            Exit 1
-                        } Else {
-                            $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new Graph API credential now?"
-                            If ($NewCredential) {
-                                Create-NewCredential -Graph
-                                $Credential = Get-StoredCredential -Target AUPasswordExpiry
-                            } Else {
-                                Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
-                                Exit 1
-                            }
-                        }
-                    }
-                } Else {
-                    $Credential = Get-StoredCredential -Target AUPasswordExpiry
-        
-                    If ($Null -eq $Credential) {
-                        Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with a dedicated email account." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
-                        
-                        If ($noninteractive) {
-                            Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
-                            Exit 1
-                        } Else {
-                            $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new SMTP AUTH email account credential now?"
-                            If ($NewCredential) {
-                                Create-NewCredential
-                                $Credential = Get-StoredCredential -Target AUPasswordExpiry
-                            } Else {
-                                Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPAUTH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
-                                Exit 1
-                            }
-                        }
-                    }
-                }
+                Get-ClientCredential -SMTPMethod $clientConfig["SMTPMethod"]
             }
 
             # Return the hashtable content
@@ -2056,56 +2100,12 @@ Function Send-PasswordExpiry {
         [Parameter(Mandatory = $True)] [string]$EmailSubject,
         [Parameter(Mandatory = $True)] [string]$EmailBody
 	)
-    
-    # Are we in a noninteractive session?
-    $noninteractive = ([Environment]::GetCommandLineArgs() -contains '-NonInteractive')
 
     If ($clientConfig["EmailCredential"]) {
-        If ($clientConfig["SMTPMethod" -eq "SMTPGRAPH"]) {
-            $ClientCredential = Get-StoredCredential -Target AUPasswordExpiry
-
-            If ($Null -eq $ClientCredential) {
-                Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with the Graph API." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
-                
-                If ($noninteractive) {
-                    Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
-                    Exit 1
-                } Else {
-                    $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new Graph API credential now?"
-                    If ($NewCredential) {
-                        Create-NewCredential -Graph
-                        $ClientCredential = Get-StoredCredential -Target AUPasswordExpiry
-                    } Else {
-                        Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
-                        Exit 1
-                    }
-                }
-            }
-
-            $ClientSecret = $ClientCredential.GetNetworkCredential().Password
-            $Credential = ConvertTo-GraphCredential -ClientID $ClientCredential.UserName -ClientSecret $ClientSecret -DirectoryID $clientConfig["TenantID"]
-        } Else {
-            $Credential = Get-StoredCredential -Target AUPasswordExpiry
-
-            If ($Null -eq $Credential) {
-                Write-Color "AUPasswordExpiry credential not found in Credential Manager. This credential must exist to send the email notification with a dedicated email account." -Color Yellow -L -LogLvl "WARNING" -LinesBefore 1
-                
-                If ($noninteractive) {
-                    Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPGRAPH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
-                    Exit 1
-                } Else {
-                    $NewCredential = Prompt-Bool -PromptMessage "Would you like to create a new SMTP AUTH email account credential now?"
-                    If ($NewCredential) {
-                        Create-NewCredential
-                        $Credential = Get-StoredCredential -Target AUPasswordExpiry
-                    } Else {
-                        Write-Color "AUPasswordExpiry credential must exist to send the email notification with SMTPAUTH. Run this script again in an interactive powershell session to recreate the credential. Exiting..." -Color Red -L -LogLvl "ERROR" -LinesBefore 1
-                        Exit 1
-                    }
-                }
-            }
-        }
+        $Credential = Get-ClientCredential -SMTPMethod $clientConfig["SMTPMethod"]
     }
+
+    $SMTPTLS = $clientConfig["SMTPTLS"]
 
     #SMTP server ([string], required)
     $SMTPServer = $clientConfig["SMTPServer"]
@@ -2158,6 +2158,7 @@ Function Send-PasswordExpiry {
         } Else {
             #define Send-MailKitMessage parameters
             $Parameters = @{
+                "SecureSocketOptions" = $SMTPTLS
                 "Credential" = $Credential
                 "Server" = $SMTPServer
                 "Port" = $Port
@@ -2172,6 +2173,7 @@ Function Send-PasswordExpiry {
         }
     } Else {
         $Parameters = @{
+            "SecureSocketOptions" = $SMTPTLS
             "Server" = $SMTPServer
             "Port" = $Port
             "From" = $From
@@ -2591,8 +2593,8 @@ Try {
         Exit
     } 
 
-    If ((Check-ModuleStatus -Name "Send-MailKitMessage" -Silent $True) -eq $False) {
-        Write-Color "Send-MailKitMessage module was not found. Please install this module for this script to run properly. Exiting script..." -Color Red -L
+    If ((Check-ModuleStatus -Name "Mailozaurr" -Silent $True) -eq $False) {
+        Write-Color "Mailozaurr module was not found. Please install this module for this script to run properly. Exiting script..." -Color Red -L
         Exit
     } 
 
