@@ -72,6 +72,18 @@ The following SMTP Send Methods are available for configuration:
 ### Credentials
 If you select to use SMTPGRAPH, SMTPAUTH, or SMTPRELAY with user authorization required you will be prompted to enter the client secret or account password. These credentials are stored securely in the Windows Credential Manager using the CredentialManager powershell module and are only accessible by the user account that installs and runs the script.
 
+### Client Logo
+#### Validation
+If a URL is provided the image will be downloaded and validated to check if it is a supported image type. If a file path is provided the extension will be validated to check if it is a supported image type. 
+
+#### Sizing
+It can be any width but will be resized in height to be 130px. I personally recommend a square PNG with transparent background sized to 130x130px.
+
+#### Image Hosting
+Client Logos can be hosted anywhere on the internet, however those links are subject to change by the website owners at any time. I would recommend creating a github repository and uploading the logos to it, then use the raw links to the logo directly from github. This site can be used to retrieve raw links to files easily, just copy and paste the github link to the file.
+
+https://git-rawify.vercel.app/
+
 ### JSON Config
 These are the options that will be configured and saved to dynamically craft the HTML body and send the email. You can preinstall a JSON file with these options configured in C:\Scripts\AUPasswordExpiry prior to installation or running the main script and it will be detected automatically.
 #### Table of JSON Config Variable
@@ -93,20 +105,6 @@ These are the options that will be configured and saved to dynamically craft the
 | TenantID | String | Tenant ID of application when using SMTPGRAPH SMTPMethod |
 | SenderEmail | String | The email address used to send the password expiration notification email |
 | EmailCredential | Boolean | AUPasswordExpiry password credential is saved in Credential Manager |
-
-***
-
-#### Client Logo
-##### Validation
-If a URL is provided the image will be downloaded and validated to check if it is a supported image type. If a file path is provided the extension will be validated to check if it is a supported image type. 
-
-##### Sizing
-It can be any width but will be resized in height to be 130px. I personally recommend a square PNG with transparent background sized to 130x130px.
-
-##### Image Hosting
-Client Logos can be hosted anywhere on the internet, however those links are subject to change by the website owners at any time. I would recommend creating a github repository and uploading the logos to it, then use the raw links to the logo directly from github. This site can be used to retrieve raw links to files easily, just copy and paste the github link to the file.
-
-https://git-rawify.vercel.app/
 
 ***
 
