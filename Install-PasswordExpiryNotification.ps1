@@ -467,6 +467,7 @@ function Prompt-Question {
 
     # Prompt the user to enter a number
     Write-Color -Text "Enter the number of your choice" -Color White -NoNewline -LinesBefore 1; $selection = Read-Host "$zeroWidthSpace"
+    Write-Color " "
 
     # Validate the user input
     if ($selection -match '^\d+$' -and [int]$selection -ge 1 -and [int]$selection -le $answers.Count) {
@@ -848,10 +849,10 @@ Function Add-ClientConfig {
     # Define the questions and answers for the SMTP Send Method
     $question = "What SMTP send method will be used?"
     $answers = [ordered]@{
+        "Microsoft 365 Graph API: Requires App Registration setup in the client's tenant (Recommended)" = "SMTPGRAPH"
         "SMTP AUTH: Office 365, Gmail, Zoho, Outlook, iCloud, Other" = "SMTPAUTH"
         "SMTP Relay: Manual Setup" = "SMTPRELAY"
         "Unauthenticated SMTP: Office 365 Direct Send, Gmail Restricted SMTP" = "SMTPNOAUTH"
-        "Microsoft 365 Graph API: Requires App Registration setup in the client's tenant" = "SMTPGRAPH"
     }
 
     # Prompt the question to the user
@@ -933,25 +934,6 @@ Function Add-ClientConfig {
 }
 
 Function Get-ClientConfig {
-    $defaultclientConfig = @{
-        ClientName = $Null
-        ClientURL = $Null
-        ClientLogo = $Null
-        ClientDomain = $Null
-        ClientVPN = $Null
-        ClientAzure = $Null
-        ClientSSPR = $Null
-        ClientSSPRLockScreen = $Null
-        ExpireDays = $Null
-        SMTPMethod = $Null
-        SMTPServer = $Null
-        SMTPPort = $Null
-        SMTPTLS = $Null
-        TenantID = $Null
-        SenderEmail = $Null
-        EmailCredential = $Null
-    }
-
     # Initialize $configUpdated boolean
     $configUpdated = $False
 
@@ -969,24 +951,6 @@ Function Get-ClientConfig {
             $clientConfig = @{}
             foreach ($property in $clientConfigJson.PSObject.Properties) {
                 $clientConfig[$property.Name] = $property.Value
-            }
-
-            # Iterate through defaultclientConfig to ensure all keys are present and if not, set to $Null for standardization
-            ForEach ($Key in $defaultclientConfig.Keys) {
-                Try {
-                    $clientConfig[$Key] | Out-Null
-                } Catch {
-                    $clientConfig[$Key] = $Null
-                    $configUpdated = $True
-                }
-            }
-
-            If ($configUpdated) {
-                # Convert the hashtable to JSON
-                $json = $clientConfig | ConvertTo-Json -Depth 3
-
-                # Save the JSON to a file
-                $json | Out-File -FilePath "$ScriptPath\clientconf.json" -Encoding utf8 -Force
             }
 
             # Client config loaded successfully
@@ -1972,25 +1936,6 @@ Function Add-ClientConfig {
 }
 
 Function Get-ClientConfig {
-    $defaultclientConfig = @{
-        ClientName = $Null
-        ClientURL = $Null
-        ClientLogo = $Null
-        ClientDomain = $Null
-        ClientVPN = $Null
-        ClientAzure = $Null
-        ClientSSPR = $Null
-        ClientSSPRLockScreen = $Null
-        ExpireDays = $Null
-        SMTPMethod = $Null
-        SMTPServer = $Null
-        SMTPPort = $Null
-        SMTPTLS = $Null
-        TenantID = $Null
-        SenderEmail = $Null
-        EmailCredential = $Null
-    }
-
     # Initialize $configUpdated boolean
     $configUpdated = $False
 
@@ -2008,24 +1953,6 @@ Function Get-ClientConfig {
             $clientConfig = @{}
             foreach ($property in $clientConfigJson.PSObject.Properties) {
                 $clientConfig[$property.Name] = $property.Value
-            }
-
-            # Iterate through defaultclientConfig to ensure all keys are present and if not, set to $Null for standardization
-            ForEach ($Key in $defaultclientConfig.Keys) {
-                Try {
-                    $clientConfig[$Key] | Out-Null
-                } Catch {
-                    $clientConfig[$Key] = $Null
-                    $configUpdated = $True
-                }
-            }
-
-            If ($configUpdated) {
-                # Convert the hashtable to JSON
-                $json = $clientConfig | ConvertTo-Json -Depth 3
-
-                # Save the JSON to a file
-                $json | Out-File -FilePath "$PSScriptRoot\clientconf.json" -Encoding utf8 -Force
             }
 
             # Client config loaded successfully
