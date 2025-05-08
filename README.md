@@ -18,7 +18,9 @@ The following PowerShell modules are required and will be installed during insta
 Mailozaurr is a replacment for [Send-MailMessage because it has been deprecated](https://github.com/dotnet/platform-compat/blob/master/docs/DE0005.md) by Microsoft and should no longer be used.
 
 ### Prerequisites
-This script requires that the account running the script be configured with 'Log on as a batch job' security permission. If you receive this error when you run the script you will need to modify the local security policy to allow the user account to run the scheduled task. If this setting is configured in a GPO it will need to be modified in that GPO, for domain controllers this is most likely the Default Domain Controllers Policy.
+This script requires that the account running the script be configured with 'Log on as a batch job' security permission. If you receive this error when you run the script you will need to modify the local security policy to allow the user account to run the scheduled task. If this setting is configured in a GPO it will need to be modified in that GPO, for domain controllers this is most likely the Default Domain Controllers Policy. 
+
+The path to the policy is Computer Configuration > Windows Settings > Security Settings > Local Policies > User Rights Assignment > Log on as a batch job
 
 ## Installation
 ### Run directly from github
@@ -41,6 +43,8 @@ The following SMTP Send Methods are available for configuration:
 ***
 
 #### SMTPGRAPH
+**The SMTPGRAPH method sends email from an existing mailbox. This can be a user licensed or shared mailbox, but it has to be a real mailbox that exists in the tenant.**
+
 > This method will allow the script to send emails using the Graph API with application permissions. A guide to configuring the app registration to get the Tenant ID, Client/App ID, and Client Secret is linked below. 
 > 
 > ⚠️ Mail.ReadWrite permission is also required when the size of email is above 4MB.
@@ -74,6 +78,9 @@ The following SMTP Send Methods are available for configuration:
 If you select to use SMTPGRAPH, SMTPAUTH, or SMTPRELAY with user authorization required you will be prompted to enter the client secret or account password. These credentials are stored securely in the Windows Credential Manager using the CredentialManager powershell module and are only accessible by the user account that installs and runs the script.
 
 ### Client Logo
+#### Supported Extensions
+The following image extensions are supported with this script. These image types are compatible with all email readers. (jpg,jpeg,png,gif,svg)
+
 #### Validation
 If a URL is provided the image will be downloaded and validated to check if it is a supported image type. If a file path is provided the extension will be validated to check if it is a supported image type. 
 
