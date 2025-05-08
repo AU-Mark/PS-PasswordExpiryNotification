@@ -934,9 +934,6 @@ Function Add-ClientConfig {
 }
 
 Function Get-ClientConfig {
-    # Initialize $configUpdated boolean
-    $configUpdated = $False
-
     # Define the path to the JSON file
     $jsonFilePath = "$ScriptPath\clientconf.json"
 
@@ -987,6 +984,16 @@ Function Get-ClientConfig {
 
             # Add client config
             $clientConfig = Add-ClientConfig
+
+            # Read the JSON file content
+            $jsonContent = Get-Content -Path $jsonFilePath -Raw
+
+            # Convert the JSON content to a hashtable
+            $clientConfigJson = ConvertFrom-Json -InputObject $jsonContent
+            $clientConfig = @{}
+            foreach ($property in $clientConfigJson.PSObject.Properties) {
+                $clientConfig[$property.Name] = $property.Value
+            }
 
             # Return the hashtable content
             Return $clientConfig
@@ -1990,6 +1997,16 @@ Function Get-ClientConfig {
             # Add client config
             $clientConfig = Add-ClientConfig
 
+            # Read the JSON file content
+            $jsonContent = Get-Content -Path $jsonFilePath -Raw
+
+            # Convert the JSON content to a hashtable
+            $clientConfigJson = ConvertFrom-Json -InputObject $jsonContent
+            $clientConfig = @{}
+            foreach ($property in $clientConfigJson.PSObject.Properties) {
+                $clientConfig[$property.Name] = $property.Value
+            }
+
             # Return the hashtable content
             Return $clientConfig
         }
@@ -2406,11 +2423,19 @@ $HTMLEnd = @"
 # Customize the HTML based on the clients configuration
 $EmailBody = $HTMLBegin
 
+# Customize the HTML based on the clients configuration
+$EmailBody = $HTMLBegin
+
 If ($clientConfig["ClientLogo"] -like "http*") {
     $EmailBody = $EmailBody + $clientConfig["ClientLogo"] + $BodyBegin
 } Else {
-    $ComapnyLogoFile = Split-Path -Path $clientConfig['ClientLogo'] -Leaf
-    $EmailBody = $EmailBody + "cid:$ComapnyLogoFile" + $BodyBegin
+    If ($Test) {
+        $CompanyLogoFile = "file:///$($clientConfig['ClientLogo'])"
+        $EmailBody = $EmailBody + "$CompanyLogoFile" + $BodyBegin
+    } Else {
+        $CompanyLogoFile = Split-Path -Path $clientConfig['ClientLogo'] -Leaf
+        $EmailBody = $EmailBody + "cid:$CompanyLogoFile" + $BodyBegin
+    }
 }
 
 # Does the client have a AD domain?

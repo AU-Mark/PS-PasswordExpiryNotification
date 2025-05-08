@@ -132,8 +132,13 @@ $EmailBody = $HTMLBegin
 If ($clientConfig["ClientLogo"] -like "http*") {
     $EmailBody = $EmailBody + $clientConfig["ClientLogo"] + $BodyBegin
 } Else {
-    $ComapnyLogoFile = Split-Path -Path $clientConfig['ClientLogo'] -Leaf
-    $EmailBody = $EmailBody + "cid:$ComapnyLogoFile" + $BodyBegin
+    If ($Test) {
+        $CompanyLogoFile = "file:///$($clientConfig['ClientLogo'])"
+        $EmailBody = $EmailBody + "$CompanyLogoFile" + $BodyBegin
+    } Else {
+        $CompanyLogoFile = Split-Path -Path $clientConfig['ClientLogo'] -Leaf
+        $EmailBody = $EmailBody + "cid:$CompanyLogoFile" + $BodyBegin
+    }
 }
 
 # Does the client have a AD domain?
