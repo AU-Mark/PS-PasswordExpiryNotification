@@ -34,7 +34,6 @@
 - [🔒 Security Considerations](#security-considerations)
 - [📁 File Structure](#file-structure)
 - [🤝 Contributing](#contributing)
-- [📄 License](#license)
 
 ---
 
@@ -744,23 +743,7 @@ When reporting issues, please include:
 
 ---
 
-## 📄 License
-
-This project is licensed under the [MIT License](LICENSE).
-
-**What this means:**
-- ✅ Free to use, modify, and distribute
-- ✅ Commercial use permitted
-- ✅ No warranty provided
-- ❗ Must include license and copyright notice
-
----
-
 <p align="center">
     <strong>🚀 Ready to get started?</strong><br>
     <a href="#quick-start">Jump to Quick Start Guide</a>
-</p>
-
-<p align="center">
-    <sub>Built with ❤️ for system administrators everywhere</sub>
 </p>
