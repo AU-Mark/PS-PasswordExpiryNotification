@@ -82,7 +82,7 @@ The user account running this script must have:
 | Component | Requirement | Notes |
 |-----------|------------|-------|
 | **Operating System** | Windows Server 2016+ | Domain Controller or domain-joined server |
-| **PowerShell** | 5.1 or later | PowerShell 7.x recommended |
+| **PowerShell** | 5.1 or later | PowerShell 5.1 and 7.x supported |
 | **Active Directory** | Domain Services installed | Script queries AD users |
 | **Network Access** | SMTP/Graph API connectivity | For sending email notifications |
 | **Disk Space** | 50MB minimum | For scripts, logs, and dependencies |
