@@ -2594,7 +2594,8 @@ Try {
     # Open the HTML file with Chrome or Edge browser for viewing
     $edgeInstalled = Check-ProgramInstalled -ProgramName "Microsoft Edge"
     $chromeInstalled = Check-ProgramInstalled -ProgramName "Google Chrome"
-    if ($edgeInstalled -or $chromeInstalled) {
+	$firefoxInstalled = Check-ProgramInstalled -ProgramName "Mozilla Firefox"
+    if ($edgeInstalled -or $chromeInstalled -or $firefoxInstalled) {
         $HTMLSample = Prompt-Bool -PromptMessage "Would you like to see a sample HTML email?"
         If ($HTMLSample) {
             Start-Process powershell -ArgumentList "-File `"$ScriptPath\PasswordExpiryNotification.ps1`" -Test"
