@@ -2255,11 +2255,14 @@ Try {
             # Open the HTML file with Chrome or Edge browser for viewing
             $edgeInstalled = Check-ProgramInstalled -ProgramName "Microsoft Edge"
             $chromeInstalled = Check-ProgramInstalled -ProgramName "Google Chrome"
+			$firefoxInstalled = Check-ProgramInstalled -ProgramName "Mozilla Firefox"
             if ($edgeInstalled) {
                 Start-Process "msedge.exe" -ArgumentList $tempFilePath
             } elseif ($chromeInstalled) {
                 Start-Process "chrome.exe" -ArgumentList $tempFilePath
-            }
+            } elseif ($firefoxInstalled) {
+				Start-Process "firefox.exe" -ArgumentList $tempFilePath
+			}
 
             Exit 0
         } 
