@@ -2089,7 +2089,7 @@ Function Send-PasswordExpiry {
     }
 
     If ($clientConfig["EmailCredential"]) {
-        If ($clientConfig["SMTPMethod" -eq "SMTPGRAPH"]) {
+        If ($clientConfig["SMTPMethod"] -eq "SMTPGRAPH") {
             $Parameters = @{  
                 "Credential" = $Credential
                 "From" = $From
